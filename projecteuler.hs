@@ -1,5 +1,8 @@
+-- there's an excellent library that provides us with a list of primes: let's use it
 import Data.Numbers.Primes (primes)
 
+import Data.List (sort)
+import Data.List.Ordered (member)
 --------------------------------------------------------------------------------
 -- Problem 1
 --------------------------------------------------------------------------------
@@ -98,6 +101,21 @@ problem20 = sumDigits $ fact 100
 -- the explicit formula for F_n yields
 
 problem25 = floor $ (999*(log 10) + (log $ sqrt 5)) / (log $ ((1 + (sqrt 5))/2)) + 0.5
+
+--------------------------------------------------------------------------------
+-- Problem 49
+--------------------------------------------------------------------------------
+
+problem49 =
+    let fourDigitsPrimes = takeWhile ((>=) 9999) $ dropWhile ((>) 1000) primes
+        digits n
+            | n < 0 = error "Non-negative integers only"
+            | n <= 9 = [n]
+            | otherwise = (rem n 10) : (digits $ div n 10)
+        sortedDigits n = id $! sort $ digits n
+        eligibleSet = filter (\(a,b,c) -> (sortedDigits b) == (sortedDigits c)) $ filter (\(a,b,c) -> (sortedDigits a) == (sortedDigits b)) $ [(a,b,2*b-a) | a <- fourDigitsPrimes, b <- fourDigitsPrimes, b > a, (2*b-a) `member` fourDigitsPrimes]
+        (a,b,c) = eligibleSet !! 1 in
+        c+10000*(b+10000*a)
 
 --------------------------------------------------------------------------------
 -- Main
