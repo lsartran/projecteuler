@@ -1,3 +1,4 @@
+import Data.Numbers.Primes (primes)
 
 --------------------------------------------------------------------------------
 -- Problem 1
@@ -21,10 +22,16 @@ problem2 = sum [x | x <- takeWhile ((>=) 4000000) fibs, (x `mod` 2) == 0]
 -- Problem 3
 --------------------------------------------------------------------------------
 
---factor :: Integer -> [Integer]
---factor n =
+factors :: Integer -> [Integer]
+factors n = 
+    case filter (\p -> (n `mod` p) == 0) $ takeWhile ((>=) n) primes of
+        [] -> []
+        p:_ -> p:factors (n `div` p)
 
--- TO DO
+largestPrimeFactor n =
+    last $ factors n
+
+problem3 = largestPrimeFactor 600851475143
 
 --------------------------------------------------------------------------------
 -- Problem 4
@@ -33,10 +40,22 @@ problem2 = sum [x | x <- takeWhile ((>=) 4000000) fibs, (x `mod` 2) == 0]
 -- DONE, TO BE WRITTEN
 
 --------------------------------------------------------------------------------
+-- Problem 5
+--------------------------------------------------------------------------------
+
+problem5 = foldl1 lcm [1..20]
+
+--------------------------------------------------------------------------------
 -- Problem 6
 --------------------------------------------------------------------------------
 
 -- Pen & paper
+
+--------------------------------------------------------------------------------
+-- Problem 7
+--------------------------------------------------------------------------------
+
+problem7 = primes !! 10000
 
 --------------------------------------------------------------------------------
 -- Problem 9
@@ -44,6 +63,12 @@ problem2 = sum [x | x <- takeWhile ((>=) 4000000) fibs, (x `mod` 2) == 0]
 
 problem9 :: Integer
 problem9 = head [a*b*(1000-a-b) | a<-[1..1000], b<-[a..1000], (a^2)+(b^2)==(1000-a-b)^2]
+
+--------------------------------------------------------------------------------
+-- Problem 10
+--------------------------------------------------------------------------------
+
+problem10 = sum $ takeWhile ((>=) 2000000) primes
 
 --------------------------------------------------------------------------------
 -- Problem 16
@@ -81,7 +106,11 @@ problem25 = floor $ (999*(log 10) + (log $ sqrt 5)) / (log $ ((1 + (sqrt 5))/2))
 main = do
     putStrLn $ show problem1
     putStrLn $ show problem2
+    putStrLn $ show problem3
+    putStrLn $ show problem5
+    putStrLn $ show problem7
     putStrLn $ show problem9
+    putStrLn $ show problem10
     putStrLn $ show problem16
     putStrLn $ show problem20
     putStrLn $ show problem25
