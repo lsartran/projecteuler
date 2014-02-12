@@ -1,11 +1,14 @@
 -- there's an excellent library that provides us with a list of primes: let's use it
 import Data.Numbers.Primes (primes)
 
-import Data.List (sort, sortBy, zip5, foldl')
+import Data.List (sort, sortBy, zip5, foldl', group)
 import Data.List.Ordered (member)
 import Data.Function (on)
 import Debug.Trace (trace)
 import qualified Data.IntMap as Map
+import Math.NumberTheory.Powers.Squares (isSquare, integerSquareRoot)
+import Data.Ratio
+
 --------------------------------------------------------------------------------
 -- Problem 1
 --------------------------------------------------------------------------------
@@ -163,6 +166,32 @@ problem20 = sumDigits $ fact 100
 
 problem25 = floor $ (999*(log 10) + (log $ sqrt 5)) / (log $ ((1 + (sqrt 5))/2)) + 0.5
 
+
+--------------------------------------------------------------------------------
+-- Problem 33
+--------------------------------------------------------------------------------
+
+problem33 = denominator $ product [((10*a+b)%(10*c+d)) | a <- [1..9], b <- [1..9], c <- [1..9], d <- [1..9], c+d /= 0, let r = ((10*a+b) % (10*c+d)), ((a==d) && (r == (b%c))) || ((b==c) && (r == (a%d))) || ((a==c) && (r == (b%d))) || ((a==d) && (r == (b%c))), ((10*a+b) % (10*c+d)) < 1]
+
+--------------------------------------------------------------------------------
+-- Problem 39
+--------------------------------------------------------------------------------
+
+maxNumTriangles p = fst $ last $ sortBy (compare `on` snd) $ map (\l -> (head l,length l)) $ group $ sort $ filter (\x -> x <= p) [a+b+integerSquareRoot (a^2+b^2) | a <- [1..p], b <- [a..p-(2*a)], isSquare (a^2 + b^2), b <= p-b-a]
+
+problem39 = maxNumTriangles 1000
+
+--------------------------------------------------------------------------------
+-- Problem 48
+--------------------------------------------------------------------------------
+
+-- x^p [m]
+expMod x 0 m = 1
+expMod x 1 m = x `mod` m
+expMod x p m = (if (p `mod` 2) == 0 then ((expMod x (p `div` 2) m)^2) else (x * (expMod x (p - 1) m))) `mod` m
+
+problem48 = foldl' (\acc n -> (acc + (expMod n n (10^10))) `mod` (10^10)) 0 [1..1000]
+
 --------------------------------------------------------------------------------
 -- Problem 49
 --------------------------------------------------------------------------------
@@ -207,6 +236,12 @@ problem69 = last $ takeWhile ((>) 1000000) $ scanl1 (*) primes
 
 --problem47 = [(n,n+1,n+2,n+3) | n <- [1..], (==) 4 (length $ uniqueFactors n), (==) 4 (length $ uniqueFactors $ n+1), (==) 4 (length $ uniqueFactors $ n+2), (==) 4 (length $ uniqueFactors $ n+3)]
 
+
+--------------------------------------------------------------------------------
+-- Problem 94
+--------------------------------------------------------------------------------
+
+problem94 = sum [3*a+eps | a <- [2..10^9], eps <- [1,-1], isSquare ((3*a+eps)*(a-eps)), 3*a+eps <= 10^9]
 
 --------------------------------------------------------------------------------
 -- Main
