@@ -1,7 +1,7 @@
 -- there's an excellent library that provides us with a list of primes: let's use it
 import Data.Numbers.Primes (primes)
 
-import Data.List (sort, sortBy, zip5, foldl', group)
+import Data.List
 import Data.List.Ordered (member)
 import Data.Function (on)
 import Debug.Trace (trace)
@@ -65,7 +65,6 @@ problem5 = foldl1 lcm [1..20]
 --------------------------------------------------------------------------------
 
 problem7 = primes !! 10000
-
 
 --------------------------------------------------------------------------------
 -- Problem 8
@@ -236,6 +235,26 @@ problem69 = last $ takeWhile ((>) 1000000) $ scanl1 (*) primes
 
 --problem47 = [(n,n+1,n+2,n+3) | n <- [1..], (==) 4 (length $ uniqueFactors n), (==) 4 (length $ uniqueFactors $ n+1), (==) 4 (length $ uniqueFactors $ n+2), (==) 4 (length $ uniqueFactors $ n+3)]
 
+--------------------------------------------------------------------------------
+-- Problem 65
+--------------------------------------------------------------------------------
+
+--continuedFractionToConvergents :: [Integer] -> [Ratio Integer]
+--continuedFractionToConvergents [] = error "Empty continued fraction"
+--continuedFractionToConvergents [x] = [x % 1]
+--continuedFractionToConvergents (x:xs) =
+--    let cv = continuedFractionToConvergents xs in ((x % 1) + ((fromInteger 1) / (head cv))):cv
+
+--convergents' cf = ([h],[k])
+convergents' [a0] = ([a0],[1])
+convergents' [a1,a0] = ([1+a1*a0,a0],[a1,1])
+convergents' (a2:as) =
+    let (h,k) = convergents' as in (((a2 * (h !! 0)) + (h !! 1)):h,((a2 * (k !! 0)) + (k !! 1)):k)
+
+convergents l =
+    let (hl,kl) = convergents' l in zipWith (%) hl kl
+
+problem65 = sumDigits ((reverse $ fst (convergents' $ reverse $ (2:1:concat [[2*k,1,1] | k <- [1..100]]))) !! 99)
 
 --------------------------------------------------------------------------------
 -- Problem 94
