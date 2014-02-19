@@ -4,7 +4,7 @@ import Data.Numbers.Primes (primes)
 import Data.List
 import Data.Maybe
 import Data.Tuple
-import Data.List.Ordered (member, nubSort)
+import Data.List.Ordered (member, nubSort, minus)
 import Data.Function (on)
 import Debug.Trace (trace)
 import qualified Data.IntMap as IntMap
@@ -382,6 +382,39 @@ problem94 = sum [3*a+eps | a <- [2..10^9], eps <- [1,-1], isSquare ((3*a+eps)*(a
 p97 = mod (1 + (28433 * (expMod 2 7830457 (10^10)))) (10^10)
 
 --------------------------------------------------------------------------------
+-- Problem 129
+--------------------------------------------------------------------------------
+
+--a n = head [k | k <- [1..], (==) 1 $ expMod 10 k n, (==) 0 $ repunitMod k n]
+
+--a_old n = head [k | k <- [1..], (==) 0 $ repunitMod k n]
+
+--p129 = [(n,a_n) | n <- [1..10], (==) 1 $ gcd n 10, let a_n = a n]
+
+--------------------------------------------------------------------------------
+-- Problem 133
+--------------------------------------------------------------------------------
+
+repunit k = repunit' k 1
+
+repunit' 1 acc = acc
+repunit' k acc = repunit' (k-1) (1 + 10 * acc)
+
+repunitMod k m = repunitMod' k m 1
+    where
+    repunitMod' 1 m acc = acc
+    repunitMod' k m acc = repunitMod' (k-1) m ((1 + 10 * acc) `mod` m)
+
+primeDividesRepunit n p
+    | p == 3 = error "p = 3"
+    | otherwise = (==) 1 $ expMod 10 n p
+
+dividingPrimes = [11,17,41,73,101,137,251,257,271,353,401,449,641,751,1201,1409,1601,3541,4001,4801,5051,9091,10753,15361,16001,19841,21001,21401,24001,25601,27961,37501,40961,43201,60101,62501,65537,69857,76001,76801]
+--[p | p <- takeWhile ((>) (10^5)) primes, p /= 3, primeDividesRepunit (10^100) p]
+
+p133 = sum $ minus [p | p <- takeWhile ((>) (10^5)) primes] dividingPrimes
+
+--------------------------------------------------------------------------------
 -- Problem 160
 --------------------------------------------------------------------------------
 
@@ -403,6 +436,14 @@ factorialTrailingDigits' n acc =
 
 factorialTrailingDigits :: Int -> Int
 factorialTrailingDigits n = trace (show n) $ factorialTrailingDigits' n 1
+
+--------------------------------------------------------------------------------
+-- Problem 206
+--------------------------------------------------------------------------------
+
+p206l = 1020304050607080900
+sqp206l = integerSquareRoot p206l
+p206u = 1929394959697989990
 
 --------------------------------------------------------------------------------
 -- Main
