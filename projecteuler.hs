@@ -4,7 +4,7 @@ import Data.Numbers.Primes (primes)
 import Data.List
 import Data.Maybe
 import Data.Tuple
-import Data.List.Ordered (member, nubSort, minus)
+import Data.List.Ordered (member, nubSort, minus, isect, merge)
 import Data.Function (on)
 import Debug.Trace (trace)
 import qualified Data.IntMap as IntMap
@@ -267,6 +267,14 @@ problem33 = denominator $ product [((10*a+b)%(10*c+d)) | a <- [1..9], b <- [1..9
 maxNumTriangles p = fst $ last $ sortBy (compare `on` snd) $ map (\l -> (head l,length l)) $ group $ sort $ filter (\x -> x <= p) [a+b+integerSquareRoot (a^2+b^2) | a <- [1..p], b <- [a..p-(2*a)], isSquare (a^2 + b^2), b <= p-b-a]
 
 problem39 = maxNumTriangles 1000
+
+--------------------------------------------------------------------------------
+-- Problem 41
+--------------------------------------------------------------------------------
+
+makePandigitals n = sort $ map (foldl' (\a b -> b + 10*a) 0) $ permutations [1..n]
+
+p41 = isect (foldl' merge [] $ [makePandigitals n | n <- [1..7]]) primes
 
 --------------------------------------------------------------------------------
 -- Problem 48
