@@ -43,9 +43,11 @@ factors n =
 largestPrimeFactor n =
     last $ factors n
 
-divisors n = nubSort $ sort $ map product $ subsequences $ factors n
+divisors n = nubSort $ map product $ subsequences $ factors n
 
 decomp n = map (\l -> (head l, length l)) $ group $ factors n
+
+nDivisors n = product $ map ((+1) . snd) $ decomp n
 
 problem3 = largestPrimeFactor 600851475143
 
@@ -463,6 +465,19 @@ factorialTrailingDigits :: Int -> Int
 factorialTrailingDigits n = trace (show n) $ factorialTrailingDigits' n 1
 
 --------------------------------------------------------------------------------
+-- Problem 179
+--------------------------------------------------------------------------------
+
+p179 = let nd = [(n,nDivisors n) | n <- [2..(10^7)-1]] in seq nd $ length $ filter (\((n,dn),(m,dm)) -> (dn == dm)) $ zip nd $ tail nd
+
+--------------------------------------------------------------------------------
+-- Problem 188
+--------------------------------------------------------------------------------
+
+--hyperExp x 1 m = a `mod` m
+--hyperExp x k m = expMod a ()
+
+--------------------------------------------------------------------------------
 -- Problem 206
 --------------------------------------------------------------------------------
 
@@ -489,4 +504,4 @@ main = do
     --putStrLn $ show $ factorialTrailingDigits (2*10^6+2)
     --putStrLn $ show $ factorialTrailingDigits (2*10^6+3)
     --putStrLn $ show $ head [p | p <- [1..], (factorialTrailingDigits p) /= (factorialTrailingDigits'' p 1)]
-    putStrLn $ show $ p129
+    putStrLn $ show $ p179
