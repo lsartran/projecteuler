@@ -2,10 +2,13 @@
 import Data.Numbers.Primes (primes)
 
 import Data.List
-import Data.List.Ordered (member)
+import Data.Maybe
+import Data.Tuple
+import Data.List.Ordered (member, nubSort, minus, isect, merge)
 import Data.Function (on)
 import Debug.Trace (trace)
-import qualified Data.IntMap as Map
+import qualified Data.IntMap as IntMap
+import qualified Data.Map as Map
 --import Math.NumberTheory.Powers.Squares (isSquare, integerSquareRoot)
 import Data.Ratio
 
@@ -43,12 +46,15 @@ largestPrimeFactor n =
 decomp :: Integer -> [(Integer,Int)]
 decomp n = map (\g -> (head g, length g)) $ group $ factors n
 
-nFactors :: Integer -> Int
-nFactors =
+nDivisors :: Integer -> Int
+nDivisors =
     product . map ((+1) . snd) . decomp
 
 rad :: Integer -> Integer
 rad = product . map fst . decomp
+
+divisors :: Integer -> [Integer]
+divisors n = nubSort $ map product $ subsequences $ factors n
 
 problem3 = largestPrimeFactor 600851475143
 
@@ -106,13 +112,44 @@ problem9 = head [a*b*(1000-a-b) | a<-[1..1000], b<-[a..1000], (a^2)+(b^2)==(1000
 problem10 = sum $ takeWhile ((>=) 2000000) primes
 
 --------------------------------------------------------------------------------
+-- Problem 11
+--------------------------------------------------------------------------------
+
+grid' = "08 02 22 97 38 15 00 40 00 75 04 05 07 78 52 12 50 77 91 08 \
+\49 49 99 40 17 81 18 57 60 87 17 40 98 43 69 48 04 56 62 00 \
+\81 49 31 73 55 79 14 29 93 71 40 67 53 88 30 03 49 13 36 65 \
+\52 70 95 23 04 60 11 42 69 24 68 56 01 32 56 71 37 02 36 91 \
+\22 31 16 71 51 67 63 89 41 92 36 54 22 40 40 28 66 33 13 80 \
+\24 47 32 60 99 03 45 02 44 75 33 53 78 36 84 20 35 17 12 50 \
+\32 98 81 28 64 23 67 10 26 38 40 67 59 54 70 66 18 38 64 70 \
+\67 26 20 68 02 62 12 20 95 63 94 39 63 08 40 91 66 49 94 21 \
+\24 55 58 05 66 73 99 26 97 17 78 78 96 83 14 88 34 89 63 72 \
+\21 36 23 09 75 00 76 44 20 45 35 14 00 61 33 97 34 31 33 95 \
+\78 17 53 28 22 75 31 67 15 94 03 80 04 62 16 14 09 53 56 92 \
+\16 39 05 42 96 35 31 47 55 58 88 24 00 17 54 24 36 29 85 57 \
+\86 56 00 48 35 71 89 07 05 44 44 37 44 60 21 58 51 54 17 58 \
+\19 80 81 68 05 94 47 69 28 73 92 13 86 52 17 77 04 89 55 40 \
+\04 52 08 83 97 35 99 16 07 97 57 32 16 26 26 79 33 27 98 66 \
+\88 36 68 87 57 62 20 72 03 46 33 67 46 55 12 32 63 93 53 69 \
+\04 42 16 73 38 25 39 11 24 94 72 18 08 46 29 32 40 62 76 36 \
+\20 69 36 41 72 30 23 88 34 62 99 69 82 67 59 85 74 04 36 16 \
+\20 73 35 29 78 31 90 01 74 31 49 71 48 86 81 16 23 57 05 54 \
+\01 70 54 71 83 51 54 69 16 92 33 48 61 43 52 01 89 19 67 48"
+
+grid = map (read::(String -> Int)) $ words grid'
+
+mgrid = Map.fromList $ zip (map (flip quotRem 20) [0..]) grid
+
+p11 = maximum $ map (product . map fromJust) $ filter (\l -> foldl' (&&) True $ map isJust l) $ [[a,b,c,d] | i <- [0..20], j <- [0..20], k <- [True, False], let f = flip Map.lookup mgrid . (if k then swap else id), let a = f (j,i), let b = f (j, i+1), let c = f(j,i+2), let d = f(j,i+3)] ++ [[a,b,c,d] | i <- [0..20], j <- [0..20], l <- [-1, 1], let f = flip Map.lookup mgrid, let a = f (j,i), let b = f (j+1*l, i+1), let c = f(j+2*l,i+2), let d = f(j+3*l,i+3)]
+
+--------------------------------------------------------------------------------
 -- Problem 12
 --------------------------------------------------------------------------------
 
 tri :: Integer -> Integer
 tri n = (n * (n+1)) `quot` 2
 
-p12 = head $ filter (((<=) 500) . nFactors) [tri n | n <- [1..]]
+p12 = head $ filter (((<=) 500) . nDivisors) [tri n | n <- [1..]]
 
 --------------------------------------------------------------------------------
 -- Problem 13
@@ -134,25 +171,25 @@ collatzLength n = collatzLength' n 0
     collatzLength' 1 aux = 1 + aux
     collatzLength' n aux = (if n `rem` 2 == 0 then collatzLength' (n `div` 2) else collatzLength' (3*n+1)) (aux + 1)
 
-memoizedCollatzLength' :: Int -> Map.IntMap Int -> (Int, Map.IntMap Int)
-memoizedCollatzLength' 1 _ = (1, Map.singleton 1 1)
+memoizedCollatzLength' :: Int -> IntMap.IntMap Int -> (Int, IntMap.IntMap Int)
+memoizedCollatzLength' 1 _ = (1, IntMap.singleton 1 1)
 memoizedCollatzLength' n tbl =
-    if Map.member n tbl
-    then ((Map.!) tbl n, tbl)
+    if IntMap.member n tbl
+    then ((IntMap.!) tbl n, tbl)
     else (
         if n `rem` 2 == 0
-        then let (l,tbl0) = memoizedCollatzLength' (n `div` 2) tbl in (l+1, Map.insert n (l+1) tbl0)
-        --else let (l,tbl0) = memoizedCollatzLength' (3*n+1) tbl in (l+1, Map.insert n (l+1) tbl0)
-        else let (l,tbl0) = memoizedCollatzLength' ((3*n+1) `div` 2) tbl in (l+2, Map.insert n (l+2) tbl0)
+        then let (l,tbl0) = memoizedCollatzLength' (n `div` 2) tbl in (l+1, IntMap.insert n (l+1) tbl0)
+        --else let (l,tbl0) = memoizedCollatzLength' (3*n+1) tbl in (l+1, IntMap.insert n (l+1) tbl0)
+        else let (l,tbl0) = memoizedCollatzLength' ((3*n+1) `div` 2) tbl in (l+2, IntMap.insert n (l+2) tbl0)
     )
 
 memoizedCollatzLength :: Int -> Int
-memoizedCollatzLength n = fst $ memoizedCollatzLength' n Map.empty
+memoizedCollatzLength n = fst $ memoizedCollatzLength' n IntMap.empty
 
-problem14 = snd $ Map.foldlWithKey' g (1,1) htbl
+problem14 = snd $ IntMap.foldlWithKey' g (1,1) htbl
     where
         g (maxl,maxn) n l = if (n > 1000000) || (l <= maxl) then (maxl,maxn) else (l,n)
-        htbl = foldl' f Map.empty [1..1000000]
+        htbl = foldl' f IntMap.empty [1..1000000]
         f tbl n = snd $ memoizedCollatzLength' n tbl
 
 --------------------------------------------------------------------------------
@@ -206,6 +243,32 @@ countLetters (x:xs) =
         _ -> 1 + countLetters xs
 
 --------------------------------------------------------------------------------
+-- Problem 18
+--------------------------------------------------------------------------------
+
+triangle0 = map (read::(String -> Int)) $ words "3 \
+\7 4 \
+\2 4 6 \
+\8 5 9 3"
+
+triangle1 = map (read::(String -> Int)) $ words "\
+\75 \
+\95 64 \
+\17 47 82 \
+\18 35 87 10 \
+\20 04 82 47 65 \
+\19 01 23 75 03 34 \
+\88 02 77 73 07 63 67 \
+\99 65 04 28 06 16 70 92 \
+\41 41 26 56 83 40 80 70 33 \
+\41 48 72 33 47 32 37 16 94 29 \
+\53 71 44 65 25 43 91 52 97 51 14 \
+\70 11 33 28 77 73 17 78 39 68 17 57 \
+\91 71 52 38 17 14 91 43 58 50 27 29 48 \
+\63 66 04 68 89 53 67 30 73 16 69 87 40 31 \
+\04 62 98 27 23 09 70 98 73 93 38 53 60 04 23"
+
+--------------------------------------------------------------------------------
 -- Problem 20
 --------------------------------------------------------------------------------
 
@@ -222,6 +285,22 @@ problem20 = sumDigits $ fact 100
 
 problem25 = floor $ (999*(log 10) + (log $ sqrt 5)) / (log $ ((1 + (sqrt 5))/2)) + 0.5
 
+--------------------------------------------------------------------------------
+-- Problem 28
+--------------------------------------------------------------------------------
+
+p28 = length $ nubSort [a^b | a <- [2..100], b  <- [2..100]]
+
+--------------------------------------------------------------------------------
+-- Problem 30
+--------------------------------------------------------------------------------
+
+nthPowerOfDigits n p
+    | n < 0 = error "Non-negative integers only"
+    | n <= 9 = n^p
+    | otherwise = let (q,r) = quotRem n 10 in (r^p) + nthPowerOfDigits q p
+
+p30 = sum [n | n <- [2..999999], nthPowerOfDigits n 5 == n]
 
 --------------------------------------------------------------------------------
 -- Problem 33
@@ -242,6 +321,14 @@ isSquare _ = error "Stub"
 maxNumTriangles p = fst $ last $ sortBy (compare `on` snd) $ map (\l -> (head l,length l)) $ group $ sort $ filter (\x -> x <= p) [a+b+integerSquareRoot (a^2+b^2) | a <- [1..p], b <- [a..p-(2*a)], isSquare (a^2 + b^2), b <= p-b-a]
 
 problem39 = maxNumTriangles 1000
+
+--------------------------------------------------------------------------------
+-- Problem 41
+--------------------------------------------------------------------------------
+
+makePandigitals n = sort $ map (foldl' (\a b -> b + 10*a) 0) $ permutations [1..n]
+
+p41 = isect (foldl' merge [] $ [makePandigitals n | n <- [1..7]]) primes
 
 --------------------------------------------------------------------------------
 -- Problem 48
@@ -286,6 +373,9 @@ totient :: Integer -> Double
 totient n =
     (fromInteger n) * (product $ map (\x -> 1 - (1/(fromInteger x))) $ uniqueFactors n)
 
+totient' :: Integer -> Integer
+totient' n = product $ map (\(p,k) -> (p^(k-1))*(p-1)) $ decomp n
+
 n_over_phi_n :: Integer -> Double
 n_over_phi_n n =
     (fromInteger n) / (totient n)
@@ -297,6 +387,15 @@ problem69 = last $ takeWhile ((>) 1000000) $ scanl1 (*) primes
 --------------------------------------------------------------------------------
 
 --problem47 = [(n,n+1,n+2,n+3) | n <- [1..], (==) 4 (length $ uniqueFactors n), (==) 4 (length $ uniqueFactors $ n+1), (==) 4 (length $ uniqueFactors $ n+2), (==) 4 (length $ uniqueFactors $ n+3)]
+
+--------------------------------------------------------------------------------
+-- Problem 52
+--------------------------------------------------------------------------------
+
+sameDigits _ (d:dl) =
+    and $ map ((==) d) dl
+
+p52 = fst $ head $ filter (uncurry sameDigits) [(x,[sort $ digits (k*x) | k <- [1..6]]) | x <- [1..]]
 
 --------------------------------------------------------------------------------
 -- Problem 57
@@ -354,10 +453,103 @@ problem65 = sumDigits ((reverse $ fst (convergents' $ reverse $ (2:1:concat [[2*
 problem94 = sum [3*a+eps | a <- [2..10^9], eps <- [1,-1], isSquare ((3*a+eps)*(a-eps)), 3*a+eps <= 10^9]
 
 --------------------------------------------------------------------------------
+-- Problem 97
+--------------------------------------------------------------------------------
+
+p97 = mod (1 + (28433 * (expMod 2 7830457 (10^10)))) (10^10)
+
+--------------------------------------------------------------------------------
 -- Problem 127
 --------------------------------------------------------------------------------
 
 p127 = sum [c | c <- [1..120000-1], a <- [1..(1 + c `div` 2)], let b = c - a, a < b, (gcd a b) == 1, (gcd a c) == 1, (gcd b c) == 1, rad(a*b*c) < c]
+
+--------------------------------------------------------------------------------
+-- Problem 129
+--------------------------------------------------------------------------------
+
+a n
+    | (/=) 1 $ gcd n 10 = error "n and 10 must be coprime"
+    | otherwise = head [k | k <- [1..], (==) 1 $ expMod 10 k (9*n)]
+
+a' n
+    | (/=) 1 $ gcd n 10 = error "n and 10 must be coprime"
+    | otherwise = head [k | k <- (divisors $ totient' (9*n)), (==) 1 $ expMod 10 k (9*n)]
+
+p129 = head [n | n <- [(10^6)+1,(10^6)+3..], (==) 1 $ gcd n 10, let a_n = a' n, a_n >= (10^6)]
+
+--------------------------------------------------------------------------------
+-- Problem 133
+--------------------------------------------------------------------------------
+
+repunit k = repunit' k 1
+
+repunit' 1 acc = acc
+repunit' k acc = repunit' (k-1) (1 + 10 * acc)
+
+repunitMod k m = repunitMod' k m 1
+    where
+    repunitMod' 1 m acc = acc
+    repunitMod' k m acc = repunitMod' (k-1) m ((1 + 10 * acc) `mod` m)
+
+primeDividesRepunit n p
+    | p == 3 = error "p = 3"
+    | otherwise = (==) 1 $ expMod 10 n p
+
+dividingPrimes = [11,17,41,73,101,137,251,257,271,353,401,449,641,751,1201,1409,1601,3541,4001,4801,5051,9091,10753,15361,16001,19841,21001,21401,24001,25601,27961,37501,40961,43201,60101,62501,65537,69857,76001,76801]
+--[p | p <- takeWhile ((>) (10^5)) primes, p /= 3, primeDividesRepunit (10^100) p]
+
+p133 = sum $ minus [p | p <- takeWhile ((>) (10^5)) primes] dividingPrimes
+
+--------------------------------------------------------------------------------
+-- Problem 132
+--------------------------------------------------------------------------------
+
+p132 = sum $ take 40 [p | p <- primes, p /= 3, primeDividesRepunit (10^9) p]
+
+--------------------------------------------------------------------------------
+-- Problem 160
+--------------------------------------------------------------------------------
+
+removeTrailingZeros n =
+    let (q,r) = quotRem n 10 in
+    if r == 0 then removeTrailingZeros q else n
+
+factorialTrailingDigits_ 1 = 1
+factorialTrailingDigits_ n =
+    let p = n * factorialTrailingDigits_ (n-1) in
+    (removeTrailingZeros p) `mod` (10^5)
+
+factorialTrailingDigits' 1 acc = acc
+factorialTrailingDigits' n acc =
+    --trace (show acc) (
+    let m = (removeTrailingZeros n)
+        p = (removeTrailingZeros (m * acc)) `mod` (10^5) in
+    factorialTrailingDigits' (n-1) p --)
+
+factorialTrailingDigits :: Int -> Int
+factorialTrailingDigits n = trace (show n) $ factorialTrailingDigits' n 1
+
+--------------------------------------------------------------------------------
+-- Problem 179
+--------------------------------------------------------------------------------
+
+p179 = let nd = [(n,nDivisors n) | n <- [2..(10^7)-1]] in seq nd $ length $ filter (\((n,dn),(m,dm)) -> (dn == dm)) $ zip nd $ tail nd
+
+--------------------------------------------------------------------------------
+-- Problem 188
+--------------------------------------------------------------------------------
+
+--hyperExp x 1 m = a `mod` m
+--hyperExp x k m = expMod a ()
+
+--------------------------------------------------------------------------------
+-- Problem 206
+--------------------------------------------------------------------------------
+
+p206l = 1020304050607080900
+sqp206l = integerSquareRoot p206l
+p206u = 1929394959697989990
 
 --------------------------------------------------------------------------------
 -- Main
@@ -375,3 +567,8 @@ main = do
     --putStrLn $ show problem20
     --putStrLn $ show problem25
     putStrLn $ show p127
+    --putStrLn $ show $ factorialTrailingDigits (2*10^8+3)
+    --putStrLn $ show $ factorialTrailingDigits (2*10^6+2)
+    --putStrLn $ show $ factorialTrailingDigits (2*10^6+3)
+    --putStrLn $ show $ head [p | p <- [1..], (factorialTrailingDigits p) /= (factorialTrailingDigits'' p 1)]
+    putStrLn $ show $ p179
