@@ -43,6 +43,10 @@ factors n =
 largestPrimeFactor n =
     last $ factors n
 
+divisors n = nubSort $ sort $ map product $ subsequences $ factors n
+
+decomp n = map (\l -> (head l, length l)) $ group $ factors n
+
 problem3 = largestPrimeFactor 600851475143
 
 --------------------------------------------------------------------------------
@@ -307,6 +311,9 @@ totient :: Integer -> Double
 totient n =
     (fromInteger n) * (product $ map (\x -> 1 - (1/(fromInteger x))) $ uniqueFactors n)
 
+totient' :: Integer -> Integer
+totient' n = product $ map (\(p,k) -> (p^(k-1))*(p-1)) $ decomp n
+
 n_over_phi_n :: Integer -> Double
 n_over_phi_n n =
     (fromInteger n) / (totient n)
@@ -385,11 +392,15 @@ p97 = mod (1 + (28433 * (expMod 2 7830457 (10^10)))) (10^10)
 -- Problem 129
 --------------------------------------------------------------------------------
 
---a n = head [k | k <- [1..], (==) 1 $ expMod 10 k n, (==) 0 $ repunitMod k n]
+a n
+    | (/=) 1 $ gcd n 10 = error "n and 10 must be coprime"
+    | otherwise = head [k | k <- [1..], (==) 1 $ expMod 10 k (9*n)]
 
---a_old n = head [k | k <- [1..], (==) 0 $ repunitMod k n]
+a' n
+    | (/=) 1 $ gcd n 10 = error "n and 10 must be coprime"
+    | otherwise = head [k | k <- (divisors $ totient' (9*n)), (==) 1 $ expMod 10 k (9*n)]
 
---p129 = [(n,a_n) | n <- [1..10], (==) 1 $ gcd n 10, let a_n = a n]
+p129 = head [n | n <- [(10^6)+1,(10^6)+3..], (==) 1 $ gcd n 10, let a_n = a' n, a_n >= (10^6)]
 
 --------------------------------------------------------------------------------
 -- Problem 133
@@ -466,7 +477,8 @@ main = do
     --putStrLn $ show problem16
     --putStrLn $ show problem20
     --putStrLn $ show problem25
-    putStrLn $ show $ factorialTrailingDigits (2*10^8+3)
+    --putStrLn $ show $ factorialTrailingDigits (2*10^8+3)
     --putStrLn $ show $ factorialTrailingDigits (2*10^6+2)
     --putStrLn $ show $ factorialTrailingDigits (2*10^6+3)
     --putStrLn $ show $ head [p | p <- [1..], (factorialTrailingDigits p) /= (factorialTrailingDigits'' p 1)]
+    putStrLn $ show $ p129
