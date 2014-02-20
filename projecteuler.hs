@@ -6,7 +6,7 @@ import Data.List.Ordered (member)
 import Data.Function (on)
 import Debug.Trace (trace)
 import qualified Data.IntMap as Map
-import Math.NumberTheory.Powers.Squares (isSquare, integerSquareRoot)
+--import Math.NumberTheory.Powers.Squares (isSquare, integerSquareRoot)
 import Data.Ratio
 
 --------------------------------------------------------------------------------
@@ -39,6 +39,16 @@ factors n =
 
 largestPrimeFactor n =
     last $ factors n
+
+decomp :: Integer -> [(Integer,Int)]
+decomp n = map (\g -> (head g, length g)) $ group $ factors n
+
+nFactors :: Integer -> Int
+nFactors =
+    product . map ((+1) . snd) . decomp
+
+rad :: Integer -> Integer
+rad = product . map fst . decomp
 
 problem3 = largestPrimeFactor 600851475143
 
@@ -94,6 +104,15 @@ problem9 = head [a*b*(1000-a-b) | a<-[1..1000], b<-[a..1000], (a^2)+(b^2)==(1000
 --------------------------------------------------------------------------------
 
 problem10 = sum $ takeWhile ((>=) 2000000) primes
+
+--------------------------------------------------------------------------------
+-- Problem 12
+--------------------------------------------------------------------------------
+
+tri :: Integer -> Integer
+tri n = (n * (n+1)) `quot` 2
+
+p12 = head $ filter (((<=) 500) . nFactors) [tri n | n <- [1..]]
 
 --------------------------------------------------------------------------------
 -- Problem 13
@@ -157,16 +176,34 @@ sumDigits n
 problem16 = sumDigits $ 2^1000
 
 --------------------------------------------------------------------------------
--- Problem 16
+-- Problem 17
 --------------------------------------------------------------------------------
 
-sumDigits :: Integer -> Integer
-sumDigits n
-    | n < 0 = error "Non-negative integers only"
-    | n <= 9 = n
-    | otherwise = (rem n 10) + (sumDigits $ div n 10)
+twentyFirst = ["one","two","three","four","five","six","seven","eight","nine","ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen","twenty"]
+decades = ["twenty","thirty","forty","fifty","sixty","seventy","eigthy","ninety"]
 
-problem16 = sumDigits $ 2^1000
+numToWords n
+    | n <= 20 = twentyFirst !! (n-1)
+    | (n < 100) && (n > 10) && ((n `rem` 10) == 0) = decades !! ((n `div` 10) - 2)
+    | 20 < n && n <= 29 = "twenty-" ++ (twentyFirst !! (n-21))
+    | 30 < n && n <= 39 = "thirty-" ++ (twentyFirst !! (n-31))
+    | 40 < n && n <= 49 = "forty-" ++ (twentyFirst !! (n-41))
+    | 50 < n && n <= 59 = "fifty-" ++ (twentyFirst !! (n-51))
+    | 60 < n && n <= 69 = "sixty-" ++ (twentyFirst !! (n-61))
+    | 70 < n && n <= 79 = "seventy-" ++ (twentyFirst !! (n-71))
+    | 80 < n && n <= 89 = "eigthy-" ++ (twentyFirst !! (n-81))
+    | 90 < n && n <= 99 = "ninety-" ++ (twentyFirst !! (n-91))
+    | n == 100 = "one hundred"
+    | 100 < n && n <= 999 = numToWords (n `div` 100) ++ " hundred" ++ (if (n `rem` 100) == 0 then "" else " and " ++ numToWords (n `rem` 100))
+    | n == 1000 = "one thousand"
+    | otherwise = error $ show n
+
+countLetters "" = 0
+countLetters (x:xs) =
+    case x of
+        ' ' -> countLetters xs
+        '-' -> countLetters xs
+        _ -> 1 + countLetters xs
 
 --------------------------------------------------------------------------------
 -- Problem 20
@@ -195,6 +232,12 @@ problem33 = denominator $ product [((10*a+b)%(10*c+d)) | a <- [1..9], b <- [1..9
 --------------------------------------------------------------------------------
 -- Problem 39
 --------------------------------------------------------------------------------
+
+integerSquareRoot :: Integer -> Integer
+integerSquareRoot _ = error "Stub"
+
+isSquare :: Integer -> Bool
+isSquare _ = error "Stub"
 
 maxNumTriangles p = fst $ last $ sortBy (compare `on` snd) $ map (\l -> (head l,length l)) $ group $ sort $ filter (\x -> x <= p) [a+b+integerSquareRoot (a^2+b^2) | a <- [1..p], b <- [a..p-(2*a)], isSquare (a^2 + b^2), b <= p-b-a]
 
@@ -295,12 +338,26 @@ convergents l =
 problem65 = sumDigits ((reverse $ fst (convergents' $ reverse $ (2:1:concat [[2*k,1,1] | k <- [1..100]]))) !! 99)
 
 
+--------------------------------------------------------------------------------
+-- Problem 76
+--------------------------------------------------------------------------------
+
+--binomial n p =
+
+
+--p76 = 
 
 --------------------------------------------------------------------------------
 -- Problem 94
 --------------------------------------------------------------------------------
 
 problem94 = sum [3*a+eps | a <- [2..10^9], eps <- [1,-1], isSquare ((3*a+eps)*(a-eps)), 3*a+eps <= 10^9]
+
+--------------------------------------------------------------------------------
+-- Problem 127
+--------------------------------------------------------------------------------
+
+p127 = sum [c | c <- [1..120000-1], a <- [1..(1 + c `div` 2)], let b = c - a, a < b, (gcd a b) == 1, (gcd a c) == 1, (gcd b c) == 1, rad(a*b*c) < c]
 
 --------------------------------------------------------------------------------
 -- Main
@@ -317,4 +374,4 @@ main = do
     --putStrLn $ show problem16
     --putStrLn $ show problem20
     --putStrLn $ show problem25
-    putStrLn $ show problem14
+    putStrLn $ show p127
