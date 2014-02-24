@@ -34,11 +34,15 @@ problem2 = sum [x | x <- takeWhile ((>=) 4000000) fibs, (x `mod` 2) == 0]
 -- Problem 3
 --------------------------------------------------------------------------------
 
-factors :: Integer -> [Integer]
-factors n = 
-    case filter (\p -> (n `mod` p) == 0) $ takeWhile ((>=) n) primes of
+factors' :: Integer -> [Integer]
+factors' n = 
+    case filter (\p -> (n `mod` p) == 0) $ takeWhile ((>=) $ integerSquareRoot n) primes of
         [] -> []
         p:_ -> p:factors (n `div` p)
+
+factors n =
+    let f = factors' n in
+    if (==) f [] then [n] else f
 
 largestPrimeFactor n =
     last $ factors n
@@ -549,6 +553,14 @@ problem65 = sumDigits ((reverse $ fst (convergents' $ reverse $ (2:1:concat [[2*
 --p76 = 
 
 --------------------------------------------------------------------------------
+-- Problem 87
+--------------------------------------------------------------------------------
+
+primesBelow n = takeWhile (<= n) primes
+
+p87 = length $ takeWhile (<= 50000000) $ nubSort [p^2 + q^3 + r^4 | p <- primesBelow 7500, q <- primesBelow 400, r <- primesBelow 90]
+
+--------------------------------------------------------------------------------
 -- Problem 94
 --------------------------------------------------------------------------------
 
@@ -564,7 +576,7 @@ p97 = mod (1 + (28433 * (expMod 2 7830457 (10^10)))) (10^10)
 -- Problem 127
 --------------------------------------------------------------------------------
 
-p127 = sum [c | c <- [1..120000-1], a <- [1..(1 + c `div` 2)], let b = c - a, a < b, (gcd a b) == 1, (gcd a c) == 1, (gcd b c) == 1, rad(a*b*c) < c]
+p127 = sum [c | c <- [1..1000-1], a <- [1..(1 + c `div` 2)], let b = c - a, a < b, (gcd a b) == 1, (gcd a c) == 1, (gcd b c) == 1, ((rad a)*(rad b)*(rad c)) < c]
 
 --------------------------------------------------------------------------------
 -- Problem 129
