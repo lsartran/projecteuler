@@ -1,10 +1,11 @@
 -- there's an excellent library that provides us with a list of primes: let's use it
 import Data.Numbers.Primes (primes)
 
+import Data.Char
 import Data.List
 import Data.Maybe
 import Data.Tuple
-import Data.List.Ordered (member, nubSort, minus, isect, merge)
+import qualified Data.List.Ordered as Ordered
 import Data.Function (on)
 import Debug.Trace (trace)
 import qualified Data.IntMap as IntMap
@@ -58,7 +59,15 @@ rad :: Integer -> Integer
 rad = product . map fst . decomp
 
 divisors :: Integer -> [Integer]
-divisors n = nubSort $ map product $ subsequences $ factors n
+divisors n = Ordered.nubSort $ map product $ subsequences $ factors n
+
+sumProperDivisors :: Integer -> Integer
+sumProperDivisors n = (-) (sum $ divisors n) n
+
+isAmicable :: Integer -> Bool
+isAmicable n =
+    let d = sumProperDivisors n in
+    ((==) n $ sumProperDivisors d) && (n /= d)
 
 problem3 = largestPrimeFactor 600851475143
 
@@ -90,7 +99,7 @@ problem7 = primes !! 10000
 -- Problem 8
 --------------------------------------------------------------------------------
 
-n = 7316717653133062491922511967442657474235534919493496983520312774506326239578318016984801869478851843858615607891129494954595017379583319528532088055111254069874715852386305071569329096329522744304355766896648950445244523161731856403098711121722383113622298934233803081353362766142828064444866452387493035890729629049156044077239071381051585930796086670172427121883998797908792274921901699720888093776657273330010533678812202354218097512545405947522435258490771167055601360483958644670632441572215539753697817977846174064955149290862569321978468622482839722413756570560574902614079729686524145351004748216637048440319989000889524345065854122758866688116427171479924442928230863465674813919123162824586178664583591245665294765456828489128831426076900422421902267105562632111110937054421750694165896040807198403850962455444362981230987879927244284909188845801561660979191338754992005240636899125607176060588611646710940507754100225698315520005593572972571636269561882670428252483600823257530420752963450
+p8_n = 7316717653133062491922511967442657474235534919493496983520312774506326239578318016984801869478851843858615607891129494954595017379583319528532088055111254069874715852386305071569329096329522744304355766896648950445244523161731856403098711121722383113622298934233803081353362766142828064444866452387493035890729629049156044077239071381051585930796086670172427121883998797908792274921901699720888093776657273330010533678812202354218097512545405947522435258490771167055601360483958644670632441572215539753697817977846174064955149290862569321978468622482839722413756570560574902614079729686524145351004748216637048440319989000889524345065854122758866688116427171479924442928230863465674813919123162824586178664583591245665294765456828489128831426076900422421902267105562632111110937054421750694165896040807198403850962455444362981230987879927244284909188845801561660979191338754992005240636899125607176060588611646710940507754100225698315520005593572972571636269561882670428252483600823257530420752963450
 
 digitsBase' b n
     | b < 2 = error "b must be >= 2"
@@ -107,7 +116,7 @@ digits = reverse . digits'
 binaryDigits = reverse . binaryDigits'
 
 problem8 :: Integer
-problem8 = last $ sort [a*b*c*d*e | (a,b,c,d,e) <- zip5 (digits n) (drop 1 $ digits n) (drop 2 $ digits n) (drop 3 $ digits n) (drop 4 $ digits n)]
+problem8 = last $ sort [a*b*c*d*e | (a,b,c,d,e) <- zip5 (digits p8_n) (drop 1 $ digits p8_n) (drop 2 $ digits p8_n) (drop 3 $ digits p8_n) (drop 4 $ digits p8_n)]
 
 --------------------------------------------------------------------------------
 -- Problem 9
@@ -313,6 +322,20 @@ fact n = product [1..n]
 problem20 = sumDigits $ fact 100
 
 --------------------------------------------------------------------------------
+-- Problem 21
+--------------------------------------------------------------------------------
+
+p21 = sum $ filter isAmicable [2..10000]
+
+--------------------------------------------------------------------------------
+-- Problem 22
+--------------------------------------------------------------------------------
+
+names = (read $ "[" ++ (unsafePerformIO $ readFile "names.txt") ++ "]")::[String]
+
+p22 = sum [idx*val | (idx,val) <- zip values [1..]] where values = map (sum . map (\x -> ord x - 64)) $ sort names
+
+--------------------------------------------------------------------------------
 -- Problem 25
 --------------------------------------------------------------------------------
 
@@ -324,7 +347,7 @@ problem25 = floor $ (999*(log 10) + (log $ sqrt 5)) / (log $ ((1 + (sqrt 5))/2))
 -- Problem 28
 --------------------------------------------------------------------------------
 
-p28 = length $ nubSort [a^b | a <- [2..100], b  <- [2..100]]
+p28 = length $ Ordered.nubSort [a^b | a <- [2..100], b  <- [2..100]]
 
 --------------------------------------------------------------------------------
 -- Problem 30
@@ -385,7 +408,7 @@ palindromes' b l =
 palindromes b =
     concat [palindromes' b n | n <- [1..]]
 
-p36 = sum $ takeWhile (<= 10^6) $ isect (palindromes 2) (palindromes 10)
+p36 = sum $ takeWhile (<= 10^6) $ Ordered.isect (palindromes 2) (palindromes 10)
 
 --------------------------------------------------------------------------------
 -- Problem 39
@@ -407,7 +430,7 @@ problem39 = maxNumTriangles 1000
 
 makePandigitals n = sort $ map (foldl' (\a b -> b + 10*a) 0) $ permutations [1..n]
 
-p41 = isect (foldl' merge [] $ [makePandigitals n | n <- [1..7]]) primes
+p41 = Ordered.isect (foldl' Ordered.merge [] $ [makePandigitals n | n <- [1..7]]) primes
 
 --------------------------------------------------------------------------------
 -- Problem 48
@@ -431,7 +454,7 @@ problem49 =
             | n <= 9 = [n]
             | otherwise = (rem n 10) : (digits $ div n 10)
         sortedDigits n = id $! sort $ digits n
-        eligibleSet = filter (\(a,b,c) -> (sortedDigits b) == (sortedDigits c)) $ filter (\(a,b,c) -> (sortedDigits a) == (sortedDigits b)) $ [(a,b,2*b-a) | a <- fourDigitsPrimes, b <- fourDigitsPrimes, b > a, (2*b-a) `member` fourDigitsPrimes]
+        eligibleSet = filter (\(a,b,c) -> (sortedDigits b) == (sortedDigits c)) $ filter (\(a,b,c) -> (sortedDigits a) == (sortedDigits b)) $ [(a,b,2*b-a) | a <- fourDigitsPrimes, b <- fourDigitsPrimes, b > a, (2*b-a) `Ordered.member` fourDigitsPrimes]
         (a,b,c) = eligibleSet !! 1 in
         c+10000*(b+10000*a)
 
@@ -558,7 +581,7 @@ problem65 = sumDigits ((reverse $ fst (convergents' $ reverse $ (2:1:concat [[2*
 
 primesBelow n = takeWhile (<= n) primes
 
-p87 = length $ takeWhile (<= 50000000) $ nubSort [p^2 + q^3 + r^4 | p <- primesBelow 7500, q <- primesBelow 400, r <- primesBelow 90]
+p87 = length $ takeWhile (<= 50000000) $ Ordered.nubSort [p^2 + q^3 + r^4 | p <- primesBelow 7500, q <- primesBelow 400, r <- primesBelow 90]
 
 --------------------------------------------------------------------------------
 -- Problem 94
@@ -571,6 +594,54 @@ problem94 = sum [3*a+eps | a <- [2..10^9], eps <- [1,-1], isSquare ((3*a+eps)*(a
 --------------------------------------------------------------------------------
 
 p97 = mod (1 + (28433 * (expMod 2 7830457 (10^10)))) (10^10)
+
+--------------------------------------------------------------------------------
+-- Problem 120
+--------------------------------------------------------------------------------
+
+p120 = sum [r_max a | a <- [3..1000]]
+    where
+        r_max a
+            | a `mod` 2 == 1 = 2*a*(a `div` 2)
+            | a `mod` 2 == 0 = 2*((a `div` 2) - 1)*a
+        r' a n
+            | n `mod` 2 == 0 = 2
+            | n `mod` 2 == 1 = 2*n*a
+        r a n = mod (r' a n) (a^2)
+
+--------------------------------------------------------------------------------
+-- Problem 122
+--------------------------------------------------------------------------------
+
+--mkMul l = Ordered.nubSort $ l ++ [(x+y,nx++ny | (x,nx) <- l, (y,nx) <- l]
+
+mkMul l = Ordered.union l $ Ordered.nubSort [(x+y, ((px `Ordered.union` py)++[x+y])) | (x,px) <- l, (y,py) <- l, x <= y]
+
+muls = iterate mkMul [(1,[1]),(2,[1,2])]
+
+m = muls !! 3
+
+n = (groupBy ((==) `on` fst) m) !! 5
+
+let minimalSets l = foldl' f [] l where f l x = if [Ordered.subset y x | y <- l] then x:l else l
+
+--removeSuperSets [] = []
+--removeSuperSets [x] = [x]
+--removeSuperSets (x:xs) = if (not . null) [not $ Ordered.subset x y |y <- xs] then removeSuperSets xs else (x:(removeSuperSets xs))
+
+--getMinMuls l = groupBy (\a b -> (fst a) == (fst b)) $ Ordered.nubSort $ map (\(n,l) -> (n,length l)) l
+
+--m 1 = []
+--m 2 = [2]
+--m 3 = [2,3]
+--m 4 = [2,4]
+
+--------------------------------------------------------------------------------
+-- Problem 123
+--------------------------------------------------------------------------------
+
+p123 = fst $ fst $ head $ dropWhile ((<= 10^10) . snd) [((n,pn),r n pn) | (n,pn) <- zip [1..] primes]
+    where r n pn = (expMod (pn - 1) n (pn^2) + expMod (pn + 1) n (pn^2)) `mod` (pn^2)
 
 --------------------------------------------------------------------------------
 -- Problem 127
@@ -613,7 +684,7 @@ primeDividesRepunit n p
 dividingPrimes = [11,17,41,73,101,137,251,257,271,353,401,449,641,751,1201,1409,1601,3541,4001,4801,5051,9091,10753,15361,16001,19841,21001,21401,24001,25601,27961,37501,40961,43201,60101,62501,65537,69857,76001,76801]
 --[p | p <- takeWhile ((>) (10^5)) primes, p /= 3, primeDividesRepunit (10^100) p]
 
-p133 = sum $ minus [p | p <- takeWhile ((>) (10^5)) primes] dividingPrimes
+p133 = sum $ Ordered.minus [p | p <- takeWhile ((>) (10^5)) primes] dividingPrimes
 
 --------------------------------------------------------------------------------
 -- Problem 132
