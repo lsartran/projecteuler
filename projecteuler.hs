@@ -615,15 +615,15 @@ p120 = sum [r_max a | a <- [3..1000]]
 
 --mkMul l = Ordered.nubSort $ l ++ [(x+y,nx++ny | (x,nx) <- l, (y,nx) <- l]
 
-mkMul l = Ordered.union l $ Ordered.nubSort [(x+y, ((px `Ordered.union` py)++[x+y])) | (x,px) <- l, (y,py) <- l, x <= y]
+--mkMul l = Ordered.union l $ Ordered.nubSort [(x+y, ((px `Ordered.union` py)++[x+y])) | (x,px) <- l, (y,py) <- l, x <= y]
 
-muls = iterate mkMul [(1,[1]),(2,[1,2])]
+--muls = iterate mkMul [(1,[1]),(2,[1,2])]
 
-m = muls !! 3
+--m = muls !! 3
 
-n = (groupBy ((==) `on` fst) m) !! 5
+--n = (groupBy ((==) `on` fst) m) !! 5
 
-let minimalSets l = foldl' f [] l where f l x = if [Ordered.subset y x | y <- l] then x:l else l
+--minimalSets l = foldl' f [] l where f l x = if [Ordered.subset y x | y <- l] then x:l else l
 
 --removeSuperSets [] = []
 --removeSuperSets [x] = [x]
