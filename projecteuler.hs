@@ -615,13 +615,25 @@ p120 = sum [r_max a | a <- [3..1000]]
 
 --mkMul l = Ordered.nubSort $ l ++ [(x+y,nx++ny | (x,nx) <- l, (y,nx) <- l]
 
---mkMul l = Ordered.union l $ Ordered.nubSort [(x+y, ((px `Ordered.union` py)++[x+y])) | (x,px) <- l, (y,py) <- l, x <= y]
+m_ub' 0 = 0
+m_ub' 1 = 0
+m_ub' p = (if (p `mod` 2) == 0 then m_ub' (p `div` 2) else m_ub' (p - 1)) + 1
 
---muls = iterate mkMul [(1,[1]),(2,[1,2])]
+m_ub = map m_ub' [0..200]
 
---m = muls !! 3
+--fastCompare (x,(lx,px)) (y,py) =
+--    case compare x y of
+--        EQ -> (case compare (length px) (length py) of
+--                EQ -> LT
+--                x -> x)
+--        x -> x
 
---n = (groupBy ((==) `on` fst) m) !! 5
+mkMul :: [(Int,(Int,[Int]))] -> [(Int,(Int,[Int]))]
+mkMul l = Ordered.nubSort [(z, (lz, pz)) | (x,(lx,px)) <- l, (y,(ly,py)) <-  takeWhile ((<= (200 - x)) . fst) $ dropWhile ((< x) . fst) l, x <= y, let z = x + y, z <= 200, let pz = ((px `Ordered.union` py)++(if z >= 2 then [z] else [])), let lz = length pz, lz <= (m_ub !! z)]
+
+muls = iterate mkMul ((0,(0,[])) : (map (\x -> (2^x, (x, take x $ map (2^) [1..]))) [0..7]))
+
+n = map (\l -> (fst (l !! 0), minimum $ map (fst . snd) l)) $ groupBy ((==) `on` fst) $ muls !! 5
 
 --minimalSets l = foldl' f [] l where f l x = if [Ordered.subset y x | y <- l] then x:l else l
 
@@ -761,9 +773,10 @@ main = do
     --putStrLn $ show problem16
     --putStrLn $ show problem20
     --putStrLn $ show problem25
-    putStrLn $ show p127
+    --putStrLn $ show p127
     --putStrLn $ show $ factorialTrailingDigits (2*10^8+3)
     --putStrLn $ show $ factorialTrailingDigits (2*10^6+2)
     --putStrLn $ show $ factorialTrailingDigits (2*10^6+3)
     --putStrLn $ show $ head [p | p <- [1..], (factorialTrailingDigits p) /= (factorialTrailingDigits'' p 1)]
-    putStrLn $ show $ p179
+    putStrLn $ show $ n
+    putStrLn $ show $ sum $ map snd n
