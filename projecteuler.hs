@@ -13,6 +13,7 @@ import qualified Data.Map as Map
 import Math.NumberTheory.Powers.Squares (isSquare, integerSquareRoot)
 import Data.Ratio
 import System.IO.Unsafe
+
 --------------------------------------------------------------------------------
 -- Problem 1
 --------------------------------------------------------------------------------
@@ -613,7 +614,7 @@ p120 = sum [r_max a | a <- [3..1000]]
 -- Problem 122
 --------------------------------------------------------------------------------
 
---mkMul l = Ordered.nubSort $ l ++ [(x+y,nx++ny | (x,nx) <- l, (y,nx) <- l]
+-- TODO: learn about addition chains
 
 m_ub' 0 = 0
 m_ub' 1 = 0
@@ -621,32 +622,13 @@ m_ub' p = (if (p `mod` 2) == 0 then m_ub' (p `div` 2) else m_ub' (p - 1)) + 1
 
 m_ub = map m_ub' [0..200]
 
---fastCompare (x,(lx,px)) (y,py) =
---    case compare x y of
---        EQ -> (case compare (length px) (length py) of
---                EQ -> LT
---                x -> x)
---        x -> x
-
 mkMul :: [(Int,(Int,[Int]))] -> [(Int,(Int,[Int]))]
 mkMul l = Ordered.nubSort [(z, (lz, pz)) | (x,(lx,px)) <- l, (y,(ly,py)) <-  takeWhile ((<= (200 - x)) . fst) $ dropWhile ((< x) . fst) l, x <= y, let z = x + y, z <= 200, let pz = ((px `Ordered.union` py)++(if z >= 2 then [z] else [])), let lz = length pz, lz <= (m_ub !! z)]
 
 muls = iterate mkMul ((0,(0,[])) : (map (\x -> (2^x, (x, take x $ map (2^) [1..]))) [0..7]))
 
-n = map (\l -> (fst (l !! 0), minimum $ map (fst . snd) l)) $ groupBy ((==) `on` fst) $ muls !! 5
-
---minimalSets l = foldl' f [] l where f l x = if [Ordered.subset y x | y <- l] then x:l else l
-
---removeSuperSets [] = []
---removeSuperSets [x] = [x]
---removeSuperSets (x:xs) = if (not . null) [not $ Ordered.subset x y |y <- xs] then removeSuperSets xs else (x:(removeSuperSets xs))
-
---getMinMuls l = groupBy (\a b -> (fst a) == (fst b)) $ Ordered.nubSort $ map (\(n,l) -> (n,length l)) l
-
---m 1 = []
---m 2 = [2]
---m 3 = [2,3]
---m 4 = [2,4]
+p122 = sum $ map snd $ map (\l -> (fst (l !! 0), minimum $ map (fst . snd) l)) $ groupBy ((==) `on` fst) $ muls !! 6
+--p122 = 1582
 
 --------------------------------------------------------------------------------
 -- Problem 123
