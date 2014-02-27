@@ -1,16 +1,18 @@
 -- there's an excellent library that provides us with a list of primes: let's use it
 import Data.Numbers.Primes (primes)
 
+import Data.Char
 import Data.List
 import Data.Maybe
 import Data.Tuple
-import Data.List.Ordered (member, nubSort, minus, isect, merge)
+import qualified Data.List.Ordered as Ordered
 import Data.Function (on)
 import Debug.Trace (trace)
 import qualified Data.IntMap as IntMap
 import qualified Data.Map as Map
---import Math.NumberTheory.Powers.Squares (isSquare, integerSquareRoot)
+import Math.NumberTheory.Powers.Squares (isSquare, integerSquareRoot)
 import Data.Ratio
+import System.IO.Unsafe
 
 --------------------------------------------------------------------------------
 -- Problem 1
@@ -34,11 +36,15 @@ problem2 = sum [x | x <- takeWhile ((>=) 4000000) fibs, (x `mod` 2) == 0]
 -- Problem 3
 --------------------------------------------------------------------------------
 
-factors :: Integer -> [Integer]
-factors n = 
-    case filter (\p -> (n `mod` p) == 0) $ takeWhile ((>=) n) primes of
+factors' :: Integer -> [Integer]
+factors' n = 
+    case filter (\p -> (n `mod` p) == 0) $ takeWhile ((>=) $ integerSquareRoot n) primes of
         [] -> []
         p:_ -> p:factors (n `div` p)
+
+factors n =
+    let f = factors' n in
+    if (==) f [] then [n] else f
 
 largestPrimeFactor n =
     last $ factors n
@@ -54,7 +60,15 @@ rad :: Integer -> Integer
 rad = product . map fst . decomp
 
 divisors :: Integer -> [Integer]
-divisors n = nubSort $ map product $ subsequences $ factors n
+divisors n = Ordered.nubSort $ map product $ subsequences $ factors n
+
+sumProperDivisors :: Integer -> Integer
+sumProperDivisors n = (-) (sum $ divisors n) n
+
+isAmicable :: Integer -> Bool
+isAmicable n =
+    let d = sumProperDivisors n in
+    ((==) n $ sumProperDivisors d) && (n /= d)
 
 problem3 = largestPrimeFactor 600851475143
 
@@ -86,17 +100,24 @@ problem7 = primes !! 10000
 -- Problem 8
 --------------------------------------------------------------------------------
 
-n = 7316717653133062491922511967442657474235534919493496983520312774506326239578318016984801869478851843858615607891129494954595017379583319528532088055111254069874715852386305071569329096329522744304355766896648950445244523161731856403098711121722383113622298934233803081353362766142828064444866452387493035890729629049156044077239071381051585930796086670172427121883998797908792274921901699720888093776657273330010533678812202354218097512545405947522435258490771167055601360483958644670632441572215539753697817977846174064955149290862569321978468622482839722413756570560574902614079729686524145351004748216637048440319989000889524345065854122758866688116427171479924442928230863465674813919123162824586178664583591245665294765456828489128831426076900422421902267105562632111110937054421750694165896040807198403850962455444362981230987879927244284909188845801561660979191338754992005240636899125607176060588611646710940507754100225698315520005593572972571636269561882670428252483600823257530420752963450
+p8_n = 7316717653133062491922511967442657474235534919493496983520312774506326239578318016984801869478851843858615607891129494954595017379583319528532088055111254069874715852386305071569329096329522744304355766896648950445244523161731856403098711121722383113622298934233803081353362766142828064444866452387493035890729629049156044077239071381051585930796086670172427121883998797908792274921901699720888093776657273330010533678812202354218097512545405947522435258490771167055601360483958644670632441572215539753697817977846174064955149290862569321978468622482839722413756570560574902614079729686524145351004748216637048440319989000889524345065854122758866688116427171479924442928230863465674813919123162824586178664583591245665294765456828489128831426076900422421902267105562632111110937054421750694165896040807198403850962455444362981230987879927244284909188845801561660979191338754992005240636899125607176060588611646710940507754100225698315520005593572972571636269561882670428252483600823257530420752963450
 
-digits' n
+digitsBase' b n
+    | b < 2 = error "b must be >= 2"
     | n < 0 = error "Non-negative integers only"
-    | n <= 9 = [n]
-    | otherwise = (rem n 10) : (digits' $ div n 10)
+    | n <= (b-1) = [n]
+    | otherwise = (rem n b) : (digitsBase' b $ div n b)
+
+digits' = digitsBase' 10
+
+binaryDigits' = digitsBase' 2
 
 digits = reverse . digits'
 
+binaryDigits = reverse . binaryDigits'
+
 problem8 :: Integer
-problem8 = last $ sort [a*b*c*d*e | (a,b,c,d,e) <- zip5 (digits n) (drop 1 $ digits n) (drop 2 $ digits n) (drop 3 $ digits n) (drop 4 $ digits n)]
+problem8 = last $ sort [a*b*c*d*e | (a,b,c,d,e) <- zip5 (digits p8_n) (drop 1 $ digits p8_n) (drop 2 $ digits p8_n) (drop 3 $ digits p8_n) (drop 4 $ digits p8_n)]
 
 --------------------------------------------------------------------------------
 -- Problem 9
@@ -246,27 +267,51 @@ countLetters (x:xs) =
 -- Problem 18
 --------------------------------------------------------------------------------
 
-triangle0 = map (read::(String -> Int)) $ words "3 \
-\7 4 \
-\2 4 6 \
+stringToTriangle s = map (map (read::(String -> Integer))) $ map words $ lines s
+
+triangle0 = stringToTriangle "3\n\
+\7 4\n\
+\2 4 6\n\
 \8 5 9 3"
 
-triangle1 = map (read::(String -> Int)) $ words "\
-\75 \
-\95 64 \
-\17 47 82 \
-\18 35 87 10 \
-\20 04 82 47 65 \
-\19 01 23 75 03 34 \
-\88 02 77 73 07 63 67 \
-\99 65 04 28 06 16 70 92 \
-\41 41 26 56 83 40 80 70 33 \
-\41 48 72 33 47 32 37 16 94 29 \
-\53 71 44 65 25 43 91 52 97 51 14 \
-\70 11 33 28 77 73 17 78 39 68 17 57 \
-\91 71 52 38 17 14 91 43 58 50 27 29 48 \
-\63 66 04 68 89 53 67 30 73 16 69 87 40 31 \
+triangle1 = stringToTriangle "\
+\75\n\
+\95 64\n\
+\17 47 82\n\
+\18 35 87 10\n\
+\20 04 82 47 65\n\
+\19 01 23 75 03 34\n\
+\88 02 77 73 07 63 67\n\
+\99 65 04 28 06 16 70 92\n\
+\41 41 26 56 83 40 80 70 33\n\
+\41 48 72 33 47 32 37 16 94 29\n\
+\53 71 44 65 25 43 91 52 97 51 14\n\
+\70 11 33 28 77 73 17 78 39 68 17 57\n\
+\91 71 52 38 17 14 91 43 58 50 27 29 48\n\
+\63 66 04 68 89 53 67 30 73 16 69 87 40 31\n\
 \04 62 98 27 23 09 70 98 73 93 38 53 60 04 23"
+
+makePairs :: [Integer] -> [(Integer,Integer)]
+makePairs [x,y] = [(x,y)]
+makePairs [x,y,z] = [(x,y),(y,z)]
+makePairs (x:xs) = 
+    let ((a,b):ps) = makePairs xs in
+    (x,a):(a,b):ps
+
+
+--maxPath :: reversed triangle -> max path sums at the bottom
+maxPath :: [[Integer]] -> [Integer]
+maxPath [[x]] = [x]
+maxPath [[b,c],[a]] = [a+b,a+c]
+maxPath (x:xs) =
+    let mp = maxPath xs
+        mmp = map (uncurry max) $ makePairs mp
+        x' = init $ tail x
+        xh = head x
+        xl = last x in
+        ((xh+(head mp)):(zipWith (+) x' mmp)) ++ [xl + (last mp)]
+
+p18 = maximum $ maxPath $ reverse triangle1
 
 --------------------------------------------------------------------------------
 -- Problem 20
@@ -276,6 +321,20 @@ fact :: Integer -> Integer
 fact n = product [1..n]
 
 problem20 = sumDigits $ fact 100
+
+--------------------------------------------------------------------------------
+-- Problem 21
+--------------------------------------------------------------------------------
+
+p21 = sum $ filter isAmicable [2..10000]
+
+--------------------------------------------------------------------------------
+-- Problem 22
+--------------------------------------------------------------------------------
+
+names = (read $ "[" ++ (unsafePerformIO $ readFile "names.txt") ++ "]")::[String]
+
+p22 = sum [idx*val | (idx,val) <- zip values [1..]] where values = map (sum . map (\x -> ord x - 64)) $ sort names
 
 --------------------------------------------------------------------------------
 -- Problem 25
@@ -289,7 +348,7 @@ problem25 = floor $ (999*(log 10) + (log $ sqrt 5)) / (log $ ((1 + (sqrt 5))/2))
 -- Problem 28
 --------------------------------------------------------------------------------
 
-p28 = length $ nubSort [a^b | a <- [2..100], b  <- [2..100]]
+p28 = length $ Ordered.nubSort [a^b | a <- [2..100], b  <- [2..100]]
 
 --------------------------------------------------------------------------------
 -- Problem 30
@@ -303,20 +362,64 @@ nthPowerOfDigits n p
 p30 = sum [n | n <- [2..999999], nthPowerOfDigits n 5 == n]
 
 --------------------------------------------------------------------------------
+-- Problem 31
+--------------------------------------------------------------------------------
+
+coinSums :: [Integer] -> Integer -> Integer
+coinSums l 0 = 1
+
+
+--------------------------------------------------------------------------------
 -- Problem 33
 --------------------------------------------------------------------------------
 
 problem33 = denominator $ product [((10*a+b)%(10*c+d)) | a <- [1..9], b <- [1..9], c <- [1..9], d <- [1..9], c+d /= 0, let r = ((10*a+b) % (10*c+d)), ((a==d) && (r == (b%c))) || ((b==c) && (r == (a%d))) || ((a==c) && (r == (b%d))) || ((a==d) && (r == (b%c))), ((10*a+b) % (10*c+d)) < 1]
 
 --------------------------------------------------------------------------------
+-- Problem 35
+--------------------------------------------------------------------------------
+
+--rotate :: [a] -> [a]
+--rotate l = 
+
+--circularPrimes :: [Integer] -> Integer
+
+--------------------------------------------------------------------------------
+-- Problem 36
+--------------------------------------------------------------------------------
+
+isPalindromic b n =
+    let d = digitsBase' b n in
+    (==) d $ reverse d
+
+improperPalindromes' b 1 = [0..(b-1)]
+improperPalindromes' b 2 = map ((*) (b+1)) [0..(b-1)]
+improperPalindromes' b l =
+    let p = improperPalindromes' b (l-2)
+        n = 1 + b^(l-1) in
+    concat [[y*n + b*x | x <- p] | y <- [0..b-1]]
+
+palindromes' b 1 = [1..(b-1)]
+palindromes' b 2 = map ((*) (b+1)) [1..(b-1)]
+palindromes' b l =
+    let p = improperPalindromes' b (l-2)
+        n = 1 + b^(l-1) in
+    concat [[y*n + b*x | x <- p] | y <- [1..b-1]]
+
+palindromes b =
+    concat [palindromes' b n | n <- [1..]]
+
+p36 = sum $ takeWhile (<= 10^6) $ Ordered.isect (palindromes 2) (palindromes 10)
+
+--------------------------------------------------------------------------------
 -- Problem 39
 --------------------------------------------------------------------------------
 
-integerSquareRoot :: Integer -> Integer
-integerSquareRoot _ = error "Stub"
+--integerSquareRoot :: Integer -> Integer
+--integerSquareRoot _ = error "Stub"
 
-isSquare :: Integer -> Bool
-isSquare _ = error "Stub"
+--isSquare :: Integer -> Bool
+--isSquare _ = error "Stub"
 
 maxNumTriangles p = fst $ last $ sortBy (compare `on` snd) $ map (\l -> (head l,length l)) $ group $ sort $ filter (\x -> x <= p) [a+b+integerSquareRoot (a^2+b^2) | a <- [1..p], b <- [a..p-(2*a)], isSquare (a^2 + b^2), b <= p-b-a]
 
@@ -328,7 +431,7 @@ problem39 = maxNumTriangles 1000
 
 makePandigitals n = sort $ map (foldl' (\a b -> b + 10*a) 0) $ permutations [1..n]
 
-p41 = isect (foldl' merge [] $ [makePandigitals n | n <- [1..7]]) primes
+p41 = Ordered.isect (foldl' Ordered.merge [] $ [makePandigitals n | n <- [1..7]]) primes
 
 --------------------------------------------------------------------------------
 -- Problem 46
@@ -359,9 +462,36 @@ problem49 =
             | n <= 9 = [n]
             | otherwise = (rem n 10) : (digits $ div n 10)
         sortedDigits n = id $! sort $ digits n
-        eligibleSet = filter (\(a,b,c) -> (sortedDigits b) == (sortedDigits c)) $ filter (\(a,b,c) -> (sortedDigits a) == (sortedDigits b)) $ [(a,b,2*b-a) | a <- fourDigitsPrimes, b <- fourDigitsPrimes, b > a, (2*b-a) `member` fourDigitsPrimes]
+        eligibleSet = filter (\(a,b,c) -> (sortedDigits b) == (sortedDigits c)) $ filter (\(a,b,c) -> (sortedDigits a) == (sortedDigits b)) $ [(a,b,2*b-a) | a <- fourDigitsPrimes, b <- fourDigitsPrimes, b > a, (2*b-a) `Ordered.member` fourDigitsPrimes]
         (a,b,c) = eligibleSet !! 1 in
         c+10000*(b+10000*a)
+
+--------------------------------------------------------------------------------
+-- Problem 55
+--------------------------------------------------------------------------------
+
+revAndAdd n =
+    n + (foldl' (\x y -> x*10 + y) 0 $ digits' 123)
+
+isLychrel n = isLychrel' n 50
+    where
+        isLychrel' n 0 = False
+        isLychrel' n it = isLychrel' (revAndAdd n) (it - 1)
+
+
+--------------------------------------------------------------------------------
+-- Problem 56
+--------------------------------------------------------------------------------
+
+p56 = maximum $ map sumDigits [(a^b) | a <- [1..99], b <- [1..99]]
+
+--------------------------------------------------------------------------------
+-- Problem 67
+--------------------------------------------------------------------------------
+
+triangle2 = stringToTriangle $ unsafePerformIO $ readFile "triangle.txt"
+
+p67 = maximum $ maxPath $ reverse $ triangle2
 
 --------------------------------------------------------------------------------
 -- Problem 69
@@ -454,6 +584,14 @@ problem65 = sumDigits ((reverse $ fst (convergents' $ reverse $ (2:1:concat [[2*
 --p76 = 
 
 --------------------------------------------------------------------------------
+-- Problem 87
+--------------------------------------------------------------------------------
+
+primesBelow n = takeWhile (<= n) primes
+
+p87 = length $ takeWhile (<= 50000000) $ Ordered.nubSort [p^2 + q^3 + r^4 | p <- primesBelow 7500, q <- primesBelow 400, r <- primesBelow 90]
+
+--------------------------------------------------------------------------------
 -- Problem 94
 --------------------------------------------------------------------------------
 
@@ -466,24 +604,65 @@ problem94 = sum [3*a+eps | a <- [2..10^9], eps <- [1,-1], isSquare ((3*a+eps)*(a
 p97 = mod (1 + (28433 * (expMod 2 7830457 (10^10)))) (10^10)
 
 --------------------------------------------------------------------------------
+-- Problem 120
+--------------------------------------------------------------------------------
+
+p120 = sum [r_max a | a <- [3..1000]]
+    where
+        r_max a
+            | a `mod` 2 == 1 = 2*a*(a `div` 2)
+            | a `mod` 2 == 0 = 2*((a `div` 2) - 1)*a
+        r' a n
+            | n `mod` 2 == 0 = 2
+            | n `mod` 2 == 1 = 2*n*a
+        r a n = mod (r' a n) (a^2)
+
+--------------------------------------------------------------------------------
+-- Problem 122
+--------------------------------------------------------------------------------
+
+-- TODO: learn about addition chains
+
+m_ub' 0 = 0
+m_ub' 1 = 0
+m_ub' p = (if (p `mod` 2) == 0 then m_ub' (p `div` 2) else m_ub' (p - 1)) + 1
+
+m_ub = map m_ub' [0..200]
+
+mkMul :: [(Int,(Int,[Int]))] -> [(Int,(Int,[Int]))]
+mkMul l = Ordered.nubSort [(z, (lz, pz)) | (x,(lx,px)) <- l, (y,(ly,py)) <-  takeWhile ((<= (200 - x)) . fst) $ dropWhile ((< x) . fst) l, x <= y, let z = x + y, z <= 200, let pz = ((px `Ordered.union` py)++(if z >= 2 then [z] else [])), let lz = length pz, lz <= (m_ub !! z)]
+
+muls = iterate mkMul ((0,(0,[])) : (map (\x -> (2^x, (x, take x $ map (2^) [1..]))) [0..7]))
+
+p122 = sum $ map snd $ map (\l -> (fst (l !! 0), minimum $ map (fst . snd) l)) $ groupBy ((==) `on` fst) $ muls !! 6
+--p122 = 1582
+
+--------------------------------------------------------------------------------
+-- Problem 123
+--------------------------------------------------------------------------------
+
+p123 = fst $ fst $ head $ dropWhile ((<= 10^10) . snd) [((n,pn),r n pn) | (n,pn) <- zip [1..] primes]
+    where r n pn = (expMod (pn - 1) n (pn^2) + expMod (pn + 1) n (pn^2)) `mod` (pn^2)
+
+--------------------------------------------------------------------------------
 -- Problem 127
 --------------------------------------------------------------------------------
 
-p127 = sum [c | c <- [1..120000-1], a <- [1..(1 + c `div` 2)], let b = c - a, a < b, (gcd a b) == 1, (gcd a c) == 1, (gcd b c) == 1, rad(a*b*c) < c]
+p127 = sum [c | c <- [1..1000-1], a <- [1..(1 + c `div` 2)], let b = c - a, a < b, (gcd a b) == 1, (gcd a c) == 1, (gcd b c) == 1, ((rad a)*(rad b)*(rad c)) < c]
 
 --------------------------------------------------------------------------------
 -- Problem 129
 --------------------------------------------------------------------------------
 
-a n
+p129_a n
     | (/=) 1 $ gcd n 10 = error "n and 10 must be coprime"
     | otherwise = head [k | k <- [1..], (==) 1 $ expMod 10 k (9*n)]
 
-a' n
+p129_a' n
     | (/=) 1 $ gcd n 10 = error "n and 10 must be coprime"
     | otherwise = head [k | k <- (divisors $ totient' (9*n)), (==) 1 $ expMod 10 k (9*n)]
 
-p129 = head [n | n <- [(10^6)+1,(10^6)+3..], (==) 1 $ gcd n 10, let a_n = a' n, a_n >= (10^6)]
+p129 = head [n | n <- [(10^6)+1,(10^6)+3..], (==) 1 $ gcd n 10, let a_n = p129_a' n, a_n >= (10^6)]
 
 --------------------------------------------------------------------------------
 -- Problem 133
@@ -506,7 +685,7 @@ primeDividesRepunit n p
 dividingPrimes = [11,17,41,73,101,137,251,257,271,353,401,449,641,751,1201,1409,1601,3541,4001,4801,5051,9091,10753,15361,16001,19841,21001,21401,24001,25601,27961,37501,40961,43201,60101,62501,65537,69857,76001,76801]
 --[p | p <- takeWhile ((>) (10^5)) primes, p /= 3, primeDividesRepunit (10^100) p]
 
-p133 = sum $ minus [p | p <- takeWhile ((>) (10^5)) primes] dividingPrimes
+p133 = sum $ Ordered.minus [p | p <- takeWhile ((>) (10^5)) primes] dividingPrimes
 
 --------------------------------------------------------------------------------
 -- Problem 132
@@ -557,6 +736,16 @@ p179 = let nd = [(n,nDivisors n) | n <- [2..(10^7)-1]] in seq nd $ length $ filt
 p206l = 1020304050607080900
 sqp206l = integerSquareRoot p206l
 p206u = 1929394959697989990
+sqp206u = 1 + (integerSquareRoot p206u)
+
+--------------------------------------------------------------------------------
+-- Problem 448
+--------------------------------------------------------------------------------
+
+average l = 
+    let (s,t) = foldl' (\(s,t) n -> ((s+n),(t+1))) (0,0) l in s `div` t
+
+a n = average [lcm i n | i <- [1..n]]
 
 --------------------------------------------------------------------------------
 -- Main
@@ -573,9 +762,10 @@ main = do
     --putStrLn $ show problem16
     --putStrLn $ show problem20
     --putStrLn $ show problem25
-    putStrLn $ show p127
+    --putStrLn $ show p127
     --putStrLn $ show $ factorialTrailingDigits (2*10^8+3)
     --putStrLn $ show $ factorialTrailingDigits (2*10^6+2)
     --putStrLn $ show $ factorialTrailingDigits (2*10^6+3)
     --putStrLn $ show $ head [p | p <- [1..], (factorialTrailingDigits p) /= (factorialTrailingDigits'' p 1)]
-    putStrLn $ show $ p179
+    putStrLn $ show $ n
+    putStrLn $ show $ sum $ map snd n
