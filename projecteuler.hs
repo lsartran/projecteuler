@@ -337,6 +337,24 @@ names = (read $ "[" ++ (unsafePerformIO $ readFile "names.txt") ++ "]")::[String
 p22 = sum [idx*val | (idx,val) <- zip values [1..]] where values = map (sum . map (\x -> ord x - 64)) $ sort names
 
 --------------------------------------------------------------------------------
+-- Problem 23
+--------------------------------------------------------------------------------
+
+isAbundant n = (sumProperDivisors n) > n
+
+abundants = filter isAbundant [2..28123]
+
+--Ordered.nubSort [x + y | x <- abundants, y <- abundants, x <= y]
+
+p23 = sum $ Ordered.minus [1..28122] (foldl' Ordered.union [] [[x + y | y <- abundants, y >= x, x+y <= 28122] | x <- abundants])
+
+--------------------------------------------------------------------------------
+-- Problem 24
+--------------------------------------------------------------------------------
+
+p24 = (sort $ permutations [0..9]) !! ((10^6)-1)
+
+--------------------------------------------------------------------------------
 -- Problem 25
 --------------------------------------------------------------------------------
 
@@ -745,7 +763,7 @@ a n = average [lcm i n | i <- [1..n]]
 --------------------------------------------------------------------------------
 
 main = do
-    --putStrLn $ show problem1
+    putStrLn $ show p23
     --putStrLn $ show problem2
     --putStrLn $ show problem3
     --putStrLn $ show problem5
@@ -760,5 +778,5 @@ main = do
     --putStrLn $ show $ factorialTrailingDigits (2*10^6+2)
     --putStrLn $ show $ factorialTrailingDigits (2*10^6+3)
     --putStrLn $ show $ head [p | p <- [1..], (factorialTrailingDigits p) /= (factorialTrailingDigits'' p 1)]
-    putStrLn $ show $ n
-    putStrLn $ show $ sum $ map snd n
+    --putStrLn $ show $ n
+    --putStrLn $ show $ sum $ map snd n
