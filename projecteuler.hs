@@ -11,8 +11,16 @@ import Debug.Trace (trace)
 import qualified Data.IntMap as IntMap
 import qualified Data.Map as Map
 import Math.NumberTheory.Powers.Squares (isSquare, integerSquareRoot)
+import Math.NumberTheory.Primes.Testing (isPrime)
 import Data.Ratio
 import System.IO.Unsafe
+
+--------------------------------------------------------------------------------
+-- Util
+--------------------------------------------------------------------------------
+
+rle :: Eq a => [a] -> [(Int, a)]
+rle l = [(length grp, head grp) | grp <- group l]
 
 --------------------------------------------------------------------------------
 -- Problem 1
@@ -363,10 +371,27 @@ p24 = (sort $ permutations [0..9]) !! ((10^6)-1)
 problem25 = floor $ (999*(log 10) + (log $ sqrt 5)) / (log $ ((1 + (sqrt 5))/2)) + 0.5
 
 --------------------------------------------------------------------------------
+-- Problem 27
+--------------------------------------------------------------------------------
+
+p27 = uncurry (*) $ fst $ head $ sortBy (flip compare `on` snd) $ [((a,b),length $ takeWhile (== True) $ [isPrime $ n^2 + a*n + b | n <- [0..]]) | a <- [-1000..1000], b <- takeWhile (<= 1000) primes]
+
+--------------------------------------------------------------------------------
 -- Problem 28
 --------------------------------------------------------------------------------
 
-p28 = length $ Ordered.nubSort [a^b | a <- [2..100], b  <- [2..100]]
+p28 = 1 + sum diag1 + sum diag2 + sum diag3 + sum diag4 where
+    nmax = 500
+    diag1 = [(2*n+1)^2 | n <- [1..nmax]]
+    diag2 = [2*n*(2*n-1)+1 | n <- [1..nmax]]
+    diag3 = [(2*n)^2 + 1 | n <- [1..nmax]]
+    diag4 = [(2*n)^2 + (2*n) + 1 | n <- [1..nmax]]
+
+--------------------------------------------------------------------------------
+-- Problem 29
+--------------------------------------------------------------------------------
+
+p29 = length $ Ordered.nubSort [a^b | a <- [2..100], b  <- [2..100]]
 
 --------------------------------------------------------------------------------
 -- Problem 30
@@ -450,6 +475,13 @@ problem39 = maxNumTriangles 1000
 makePandigitals n = sort $ map (foldl' (\a b -> b + 10*a) 0) $ permutations [1..n]
 
 p41 = Ordered.isect (foldl' Ordered.merge [] $ [makePandigitals n | n <- [1..7]]) primes
+
+--------------------------------------------------------------------------------
+-- Problem 46
+--------------------------------------------------------------------------------
+
+p46 = head $ Ordered.minus (Ordered.minus [3,5..] primes) (Ordered.nubSort [r | p <- take 1000 primes, q <- take 1000 squares, let r = p+2*q, (==) 1 $ r `mod` 2])
+    where squares = map (flip (^) 2) [1..]
 
 --------------------------------------------------------------------------------
 -- Problem 48
@@ -750,6 +782,33 @@ p206u = 1929394959697989990
 sqp206u = 1 + (integerSquareRoot p206u)
 
 --------------------------------------------------------------------------------
+-- Problem 250
+--------------------------------------------------------------------------------
+
+numSubsetsSumEqMod' [] y m =
+    if y == 0 then 1 else 0
+
+--numSubsetsSumEqMod [x] y m =
+--    trace (show (x,[]::[Integer],y,m)) $ if (x `mod` m) == y then 1 else 0
+
+numSubsetsSumEqMod' (x:xs) y m =
+    trace (show (x:xs,y,m)) $ (numSubsetsSumEqMod' xs y m) + (numSubsetsSumEqMod' xs ((m+y-x) `mod` m) m)
+
+numSubsetsSumEqMod l y m =
+    trace (show (l,y,m)) $ (let (zl,l') = span (== 0) l in (2^(length zl)) * numSubsetsSumEqMod' l' y m)
+
+x = sort $ [expMod n n 250 | n <- [1..250]]
+
+modSumFromSubsets :: [Integer] -> Int -> Integer -> IntMap.IntMap Integer
+modSumFromSubsets [] m n = IntMap.singleton 0 1
+modSumFromSubsets (x:xs) m n =
+    let modsum = modSumFromSubsets xs m n
+        modsum2 = IntMap.foldWithKey (\k v newmodsum -> IntMap.insert ((k + (fromInteger x)) `mod` m) v newmodsum) IntMap.empty modsum in
+    IntMap.unionWith (\a b -> (a+b) `mod` n) modsum modsum2
+
+p250 = (-) ((IntMap.!) (modSumFromSubsets (sort [expMod n n 250 | n <- [1..250250]]) 250 (10^16)) 0) 1
+
+--------------------------------------------------------------------------------
 -- Problem 448
 --------------------------------------------------------------------------------
 
@@ -763,20 +822,4 @@ a n = average [lcm i n | i <- [1..n]]
 --------------------------------------------------------------------------------
 
 main = do
-    putStrLn $ show p23
-    --putStrLn $ show problem2
-    --putStrLn $ show problem3
-    --putStrLn $ show problem5
-    --putStrLn $ show problem7
-    --putStrLn $ show problem9
-    --putStrLn $ show problem10
-    --putStrLn $ show problem16
-    --putStrLn $ show problem20
-    --putStrLn $ show problem25
-    --putStrLn $ show p127
-    --putStrLn $ show $ factorialTrailingDigits (2*10^8+3)
-    --putStrLn $ show $ factorialTrailingDigits (2*10^6+2)
-    --putStrLn $ show $ factorialTrailingDigits (2*10^6+3)
-    --putStrLn $ show $ head [p | p <- [1..], (factorialTrailingDigits p) /= (factorialTrailingDigits'' p 1)]
-    --putStrLn $ show $ n
-    --putStrLn $ show $ sum $ map snd n
+    putStrLn $ show $ p250
