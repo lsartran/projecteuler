@@ -411,6 +411,11 @@ p30 = sum [n | n <- [2..999999], nthPowerOfDigits n 5 == n]
 coinSums :: [Integer] -> Integer -> Integer
 coinSums l 0 = 1
 
+--------------------------------------------------------------------------------
+-- Problem 32
+--------------------------------------------------------------------------------
+
+p32 = sum $ Ordered.nubSort $ map (uncurry (*)) $ [(p,q) | p <- [2..9], q <- [1234..9876], let r = p*q, sort ((digits p) ++ (digits q) ++ (digits r)) == [1..9]] ++ [(p,q) | p <- [12..98], q <- [123..987], let r = p*q, sort ((digits p) ++ (digits q) ++ (digits r)) == [1..9]]
 
 --------------------------------------------------------------------------------
 -- Problem 33
@@ -422,10 +427,15 @@ problem33 = denominator $ product [((10*a+b)%(10*c+d)) | a <- [1..9], b <- [1..9
 -- Problem 35
 --------------------------------------------------------------------------------
 
---rotate :: [a] -> [a]
---rotate l = 
+rotate :: [a] -> [a]
+rotate l = (last l):(init l)
 
---circularPrimes :: [Integer] -> Integer
+rotations :: [a] -> [[a]]
+rotations l = take (length l) (iterate rotate l)
+
+fromDigits l = foldl' (\a b -> b + 10*a) 0 l
+
+p35 = length $ [p | p <- takeWhile (<= 10^6) primes, all isPrime $ map fromDigits $ rotations $ digits p]
 
 --------------------------------------------------------------------------------
 -- Problem 36
@@ -625,6 +635,15 @@ problem65 = sumDigits ((reverse $ fst (convergents' $ reverse $ (2:1:concat [[2*
 
 
 --p76 = 
+
+--------------------------------------------------------------------------------
+-- Problem 78
+--------------------------------------------------------------------------------
+
+--coinPartitions 0 = [[]]
+--coinPartitions 1 = [[1]]
+--coinPartitions 2 = [[2],[1,1]]
+--coinPartitions n = Ordered.nubSort $ map sort $ concat $ [map (p:) (coinPartitions (n-p)) | p <- [1..n]]
 
 --------------------------------------------------------------------------------
 -- Problem 87
