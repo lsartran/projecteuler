@@ -5,6 +5,9 @@ import Data.Char
 import Data.List
 import Data.Maybe
 import Data.Tuple
+import Data.Int
+import qualified Data.Vector as V
+import qualified Data.Vector.Unboxed as UV
 import qualified Data.List.Ordered as Ordered
 import Data.Function (on)
 import Debug.Trace (trace)
@@ -408,15 +411,26 @@ p30 = sum [n | n <- [2..999999], nthPowerOfDigits n 5 == n]
 -- Problem 31
 --------------------------------------------------------------------------------
 
-coinSums :: [Integer] -> Integer -> Integer
-coinSums l 0 = 1
+coinSums :: [Integer] -> Integer -> [[Integer]]
+coinSums l 0 = [[]]
+coinSums [] s = []
+coinSums (l@(x:xs)) s
+    | x > s = coinSums xs s
+    | x <= s = (map (x:) $ coinSums l (s - x)) ++ (coinSums xs s)
 
+p31 = length $ coinSums [200, 100, 50, 20, 10, 5, 2, 1] 200
 
 --------------------------------------------------------------------------------
 -- Problem 33
 --------------------------------------------------------------------------------
 
 problem33 = denominator $ product [((10*a+b)%(10*c+d)) | a <- [1..9], b <- [1..9], c <- [1..9], d <- [1..9], c+d /= 0, let r = ((10*a+b) % (10*c+d)), ((a==d) && (r == (b%c))) || ((b==c) && (r == (a%d))) || ((a==c) && (r == (b%d))) || ((a==d) && (r == (b%c))), ((10*a+b) % (10*c+d)) < 1]
+
+--------------------------------------------------------------------------------
+-- Problem 34
+--------------------------------------------------------------------------------
+
+p34 = sum [n | n <- [10..2540160], (==) n $ sum $ map fact $ digits n ]
 
 --------------------------------------------------------------------------------
 -- Problem 35
@@ -782,31 +796,53 @@ p206u = 1929394959697989990
 sqp206u = 1 + (integerSquareRoot p206u)
 
 --------------------------------------------------------------------------------
+-- Problem 249
+--------------------------------------------------------------------------------
+
+--sumFromSubsets :: [Int] -> Int -> IntMap.IntMap Int
+--sumFromSubsets l m = f l $ IntMap.singleton 0 1
+--    where
+--        f [] acc = acc
+--        f (0:xs) acc = IntMap.map (\a -> ((a*2) `mod` m)) acc
+--        f (x:xs) acc = 
+--            let acc2 = IntMap.foldlWithKey (\newmap k v -> IntMap.insert (k+x) v newmap) IntMap.empty acc in
+--            f xs $ IntMap.unionWith (\a b -> ((a+b) `mod` m)) acc acc2
+
+--p249 = foldl' f 0 [n | (s,n) <- (IntMap.toList sfs), (isPrime . fromIntegral) s] --foldl' f 0 $ 
+--    where
+--        sfs = sumFromSubsets (takeWhile (<= 2000) primes) (10^16)
+--        f a b = (a+b) `mod` (10^16)
+
+
+sumFromSubsets' :: [Int] -> Int -> Int -> UV.Vector Int
+sumFromSubsets' l m s = f l $! UV.generate s $ \x -> if x == 0 then 1 else 0
+    where
+        f [] acc = acc
+        f l v = f' l v
+        f' (x:xs) v =
+            let w = (UV.++) (UV.replicate x 0) (UV.unsafeTake (s-x) v) in
+            f xs $! UV.zipWith (\a b -> (a+b) `mod` m) v w
+
+p249 = foldl' f 0 [n | (s,n) <- (UV.toList $ UV.imap (\a b -> (a,b)) sfs), n > 0, (isPrime . fromIntegral) s] --foldl' f 0 $ 
+    where
+        p = (takeWhile (<= 5000) primes)
+        sfs = sumFromSubsets' p (10^16) (sum p + 1)
+        f a b = (a+b) `mod` (10^16)
+
+--------------------------------------------------------------------------------
 -- Problem 250
 --------------------------------------------------------------------------------
 
-numSubsetsSumEqMod' [] y m =
-    if y == 0 then 1 else 0
+modSumFromSubsets' :: [Int] -> Int -> Int -> UV.Vector Int
+modSumFromSubsets' l m n = f l $! UV.generate m $ \x -> if x == 0 then 1 else 0
+    where
+        f [] v = v
+        f (0:xs) v = f xs $! UV.map (\a -> ((a*2) `mod` n)) v
+        f (x:xs) v =
+            let w = UV.unsafeBackpermute v (UV.generate m (\y -> (y + x) `mod` m)) in
+            f xs $! UV.zipWith (\a b -> (a+b) `mod` n) v w
 
---numSubsetsSumEqMod [x] y m =
---    trace (show (x,[]::[Integer],y,m)) $ if (x `mod` m) == y then 1 else 0
-
-numSubsetsSumEqMod' (x:xs) y m =
-    trace (show (x:xs,y,m)) $ (numSubsetsSumEqMod' xs y m) + (numSubsetsSumEqMod' xs ((m+y-x) `mod` m) m)
-
-numSubsetsSumEqMod l y m =
-    trace (show (l,y,m)) $ (let (zl,l') = span (== 0) l in (2^(length zl)) * numSubsetsSumEqMod' l' y m)
-
-x = sort $ [expMod n n 250 | n <- [1..250]]
-
-modSumFromSubsets :: [Integer] -> Int -> Integer -> IntMap.IntMap Integer
-modSumFromSubsets [] m n = IntMap.singleton 0 1
-modSumFromSubsets (x:xs) m n =
-    let modsum = modSumFromSubsets xs m n
-        modsum2 = IntMap.foldWithKey (\k v newmodsum -> IntMap.insert ((k + (fromInteger x)) `mod` m) v newmodsum) IntMap.empty modsum in
-    IntMap.unionWith (\a b -> (a+b) `mod` n) modsum modsum2
-
-p250 = (-) ((IntMap.!) (modSumFromSubsets (sort [expMod n n 250 | n <- [1..250250]]) 250 (10^16)) 0) 1
+p250 = ((UV.!) (modSumFromSubsets' ([expMod n n 250 | n <- [1..250250]]) 250 (10^16)) 0) - 1
 
 --------------------------------------------------------------------------------
 -- Problem 448
@@ -822,4 +858,4 @@ a n = average [lcm i n | i <- [1..n]]
 --------------------------------------------------------------------------------
 
 main = do
-    putStrLn $ show $ p250
+    putStrLn $ show $ p249
