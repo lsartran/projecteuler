@@ -509,6 +509,12 @@ p46 = head $ Ordered.minus (Ordered.minus [3,5..] primes) (Ordered.nubSort [r | 
     where squares = map (flip (^) 2) [1..]
 
 --------------------------------------------------------------------------------
+-- Problem 47
+--------------------------------------------------------------------------------
+
+--problem47 = [(n,n+1,n+2,n+3) | n <- [1..], (==) 4 (length $ uniqueFactors n), (==) 4 (length $ uniqueFactors $ n+1), (==) 4 (length $ uniqueFactors $ n+2), (==) 4 (length $ uniqueFactors $ n+3)]
+
+--------------------------------------------------------------------------------
 -- Problem 48
 --------------------------------------------------------------------------------
 
@@ -535,6 +541,15 @@ problem49 =
         c+10000*(b+10000*a)
 
 --------------------------------------------------------------------------------
+-- Problem 52
+--------------------------------------------------------------------------------
+
+sameDigits _ (d:dl) =
+    and $ map ((==) d) dl
+
+p52 = fst $ head $ filter (uncurry sameDigits) [(x,[sort $ digits (k*x) | k <- [1..6]]) | x <- [1..]]
+
+--------------------------------------------------------------------------------
 -- Problem 55
 --------------------------------------------------------------------------------
 
@@ -552,55 +567,6 @@ isLychrel n = isLychrel' n 50
 --------------------------------------------------------------------------------
 
 p56 = maximum $ map sumDigits [(a^b) | a <- [1..99], b <- [1..99]]
-
---------------------------------------------------------------------------------
--- Problem 67
---------------------------------------------------------------------------------
-
-triangle2 = stringToTriangle $ unsafePerformIO $ readFile "triangle.txt"
-
-p67 = maximum $ maxPath $ reverse $ triangle2
-
---------------------------------------------------------------------------------
--- Problem 69
---------------------------------------------------------------------------------
-
-removeConsecutive :: [Integer] -> [Integer]
-removeConsecutive [] = []
-removeConsecutive [x] = [x]
-removeConsecutive (a:(b:l)) =
-    if a == b then removeConsecutive (b:l) else (a:(removeConsecutive (b:l)))
-
-uniqueFactors :: Integer -> [Integer]
-uniqueFactors = removeConsecutive . factors
-
-totient :: Integer -> Double
-totient n =
-    (fromInteger n) * (product $ map (\x -> 1 - (1/(fromInteger x))) $ uniqueFactors n)
-
-totient' :: Integer -> Integer
-totient' n = product $ map (\(p,k) -> (p^(k-1))*(p-1)) $ decomp n
-
-n_over_phi_n :: Integer -> Double
-n_over_phi_n n =
-    (fromInteger n) / (totient n)
-
-problem69 = last $ takeWhile ((>) 1000000) $ scanl1 (*) primes
-
---------------------------------------------------------------------------------
--- Problem 47
---------------------------------------------------------------------------------
-
---problem47 = [(n,n+1,n+2,n+3) | n <- [1..], (==) 4 (length $ uniqueFactors n), (==) 4 (length $ uniqueFactors $ n+1), (==) 4 (length $ uniqueFactors $ n+2), (==) 4 (length $ uniqueFactors $ n+3)]
-
---------------------------------------------------------------------------------
--- Problem 52
---------------------------------------------------------------------------------
-
-sameDigits _ (d:dl) =
-    and $ map ((==) d) dl
-
-p52 = fst $ head $ filter (uncurry sameDigits) [(x,[sort $ digits (k*x) | k <- [1..6]]) | x <- [1..]]
 
 --------------------------------------------------------------------------------
 -- Problem 57
@@ -641,6 +607,39 @@ convergents l =
 
 problem65 = sumDigits ((reverse $ fst (convergents' $ reverse $ (2:1:concat [[2*k,1,1] | k <- [1..100]]))) !! 99)
 
+--------------------------------------------------------------------------------
+-- Problem 67
+--------------------------------------------------------------------------------
+
+triangle2 = stringToTriangle $ unsafePerformIO $ readFile "triangle.txt"
+
+p67 = maximum $ maxPath $ reverse $ triangle2
+
+--------------------------------------------------------------------------------
+-- Problem 69
+--------------------------------------------------------------------------------
+
+removeConsecutive :: [Integer] -> [Integer]
+removeConsecutive [] = []
+removeConsecutive [x] = [x]
+removeConsecutive (a:(b:l)) =
+    if a == b then removeConsecutive (b:l) else (a:(removeConsecutive (b:l)))
+
+uniqueFactors :: Integer -> [Integer]
+uniqueFactors = removeConsecutive . factors
+
+totient :: Integer -> Double
+totient n =
+    (fromInteger n) * (product $ map (\x -> 1 - (1/(fromInteger x))) $ uniqueFactors n)
+
+totient' :: Integer -> Integer
+totient' n = product $ map (\(p,k) -> (p^(k-1))*(p-1)) $ decomp n
+
+n_over_phi_n :: Integer -> Double
+n_over_phi_n n =
+    (fromInteger n) / (totient n)
+
+problem69 = last $ takeWhile ((>) 1000000) $ scanl1 (*) primes
 
 --------------------------------------------------------------------------------
 -- Problem 76
@@ -742,6 +741,12 @@ p129_a' n
 p129 = head [n | n <- [(10^6)+1,(10^6)+3..], (==) 1 $ gcd n 10, let a_n = p129_a' n, a_n >= (10^6)]
 
 --------------------------------------------------------------------------------
+-- Problem 132
+--------------------------------------------------------------------------------
+
+p132 = sum $ take 40 [p | p <- primes, p /= 3, primeDividesRepunit (10^9) p]
+
+--------------------------------------------------------------------------------
 -- Problem 133
 --------------------------------------------------------------------------------
 
@@ -763,12 +768,6 @@ dividingPrimes = [11,17,41,73,101,137,251,257,271,353,401,449,641,751,1201,1409,
 --[p | p <- takeWhile ((>) (10^5)) primes, p /= 3, primeDividesRepunit (10^100) p]
 
 p133 = sum $ Ordered.minus [p | p <- takeWhile ((>) (10^5)) primes] dividingPrimes
-
---------------------------------------------------------------------------------
--- Problem 132
---------------------------------------------------------------------------------
-
-p132 = sum $ take 40 [p | p <- primes, p /= 3, primeDividesRepunit (10^9) p]
 
 --------------------------------------------------------------------------------
 -- Problem 160
