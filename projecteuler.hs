@@ -345,7 +345,9 @@ p21 = sum $ filter isAmicable [2..10000]
 
 names = (read $ "[" ++ (unsafePerformIO $ readFile "names.txt") ++ "]")::[String]
 
-p22 = sum [idx*val | (idx,val) <- zip values [1..]] where values = map (sum . map (\x -> ord x - 64)) $ sort names
+wordToNum = sum . map (\x -> ord x - 64)
+
+p22 = sum [idx*val | (idx,val) <- zip values [1..]] where values = map wordToNum $ sort names
 
 --------------------------------------------------------------------------------
 -- Problem 23
@@ -508,6 +510,25 @@ p40 = product $ map champernowne_d [10^p | p <- [0..6]]
 makePandigitals n = sort $ map (foldl' (\a b -> b + 10*a) 0) $ permutations [1..n]
 
 p41 = Ordered.isect (foldl' Ordered.merge [] $ [makePandigitals n | n <- [1..7]]) primes
+
+--------------------------------------------------------------------------------
+-- Problem 42
+--------------------------------------------------------------------------------
+
+p42_words :: [Integer]
+p42_words = map (fromIntegral . wordToNum) $ ((read ("[" ++ p42_words_ ++ "]"))::([String])) where p42_words_ = unsafePerformIO $ readFile "words.txt"
+
+p42 = length $ filter (flip elem triangle_nums) p42_words where triangle_nums = takeWhile (<= 200) [n*(n+1) `div` 2 | n <- [1..]]
+
+--------------------------------------------------------------------------------
+-- Problem 45
+--------------------------------------------------------------------------------
+
+triangle_nums = [n*(n+1) `div` 2 | n <- [1..]]
+pentagonal_nums = [n*(3*n-1) `div` 2 | n <- [1..]]
+hexagonal_nums = [n*(2*n-1) | n <- [1..]]
+
+p45 = (foldl1 Ordered.isect [triangle_nums, pentagonal_nums, hexagonal_nums]) !! 2
 
 --------------------------------------------------------------------------------
 -- Problem 46
