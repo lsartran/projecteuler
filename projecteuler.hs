@@ -1,11 +1,15 @@
--- there's an excellent library that provides us with a list of primes: let's use it
-import Data.Numbers.Primes (primes)
 
+--import Prelude hiding ((^))
+--import qualified Prelude
+import Data.Array as A
 import Data.Char
 import Data.List
+import Data.List.Split
 import Data.Maybe
 import Data.Tuple
 import Data.Int
+-- there's an excellent library that provides us with a list of primes: let's use it
+import Data.Numbers.Primes (primes)
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as UV
 import qualified Data.List.Ordered as Ordered
@@ -25,6 +29,16 @@ import System.IO.Unsafe
 rle :: Eq a => [a] -> [(Int, a)]
 rle l = [(length grp, head grp) | grp <- group l]
 
+is_pandigital :: Integer -> Integer -> Integer -> Bool
+is_pandigital n m d = (==) [n..m] $ sort $ digits d
+
+is_pandigital19 :: Integer -> Bool
+is_pandigital19 d = ((d `mod` 9) == 0) && is_pandigital 1 9 d
+--is_pandigital19 = is_pandigital 1 9
+
+tenToTheSixteenth :: Int
+tenToTheSixteenth = (10^16)
+
 --------------------------------------------------------------------------------
 -- Problem 1
 --------------------------------------------------------------------------------
@@ -39,6 +53,25 @@ problem1 = sum [x | x <- [1..999], ((x `mod` 3) == 0) || ((x `mod` 5) == 0)]
 -- from http://www.haskell.org/haskellwiki/The_Fibonacci_sequence §2.2.5 With iterate
 fibs :: [Integer]
 fibs = map fst $ (\(a,b) -> (b,a+b)) `iterate` (0,1)
+
+fibsMod :: Int -> [Int]
+fibsMod m = map fst $ (\(a,b) -> (b,((a+b) `mod` m))) `iterate` (0,1)
+
+explicitFib :: Integer -> Integer
+explicitFib 0 = 0
+explicitFib 1 = 1
+explicitFib 2 = 1
+explicitFib n
+    | (n `mod` 2) == 0 =
+        let m = n `div` 2
+            fm = explicitFib m
+            fm1 = explicitFib (m - 1) in
+        fm * (2*fm1 + fm)
+    | (n `mod` 2) == 1 =
+        let m = n `div` 2
+            fm = explicitFib m
+            fm1 = explicitFib (m + 1) in
+        (fm ^ 2) + (fm1 ^ 2)
 
 problem2 :: Integer
 problem2 = sum [x | x <- takeWhile ((>=) 4000000) fibs, (x `mod` 2) == 0]
@@ -72,6 +105,9 @@ rad = product . map fst . decomp
 
 divisors :: Integer -> [Integer]
 divisors n = Ordered.nubSort $ map product $ subsequences $ factors n
+
+sumDivisors :: Integer -> Integer
+sumDivisors n = (sum $ divisors n)
 
 sumProperDivisors :: Integer -> Integer
 sumProperDivisors n = (-) (sum $ divisors n) n
@@ -325,6 +361,13 @@ maxPath (x:xs) =
 p18 = maximum $ maxPath $ reverse triangle1
 
 --------------------------------------------------------------------------------
+-- Problem 19
+--------------------------------------------------------------------------------
+
+--Jan 1st 1901 was a Tuesday
+--f m = length $ filter (== 0) $ scanl (\a b -> ((a+b) `mod` 7)) m [(365 + if (n `mod` 4) == 0 then 1 else 0) `mod` 7 | n <- [1901..2000]]
+
+--------------------------------------------------------------------------------
 -- Problem 20
 --------------------------------------------------------------------------------
 
@@ -385,6 +428,7 @@ p27 = uncurry (*) $ fst $ head $ sortBy (flip compare `on` snd) $ [((a,b),length
 -- Problem 28
 --------------------------------------------------------------------------------
 
+p28 :: Integer
 p28 = 1 + sum diag1 + sum diag2 + sum diag3 + sum diag4 where
     nmax = 500
     diag1 = [(2*n+1)^2 | n <- [1..nmax]]
@@ -482,6 +526,13 @@ palindromes b =
 p36 = sum $ takeWhile (<= 10^6) $ Ordered.isect (palindromes 2) (palindromes 10)
 
 --------------------------------------------------------------------------------
+-- Problem 37
+--------------------------------------------------------------------------------
+
+truncatR n = n `div` 10
+
+
+--------------------------------------------------------------------------------
 -- Problem 39
 --------------------------------------------------------------------------------
 
@@ -519,6 +570,25 @@ p42_words :: [Integer]
 p42_words = map (fromIntegral . wordToNum) $ ((read ("[" ++ p42_words_ ++ "]"))::([String])) where p42_words_ = unsafePerformIO $ readFile "words.txt"
 
 p42 = length $ filter (flip elem triangle_nums) p42_words where triangle_nums = takeWhile (<= 200) [n*(n+1) `div` 2 | n <- [1..]]
+
+--------------------------------------------------------------------------------
+-- Problem 43
+--------------------------------------------------------------------------------
+
+slice from to xs = take (to - from + 1) (drop from xs)
+slice3 n = slice n (2+n)
+
+p43 = sum $ map fromDigits [l | l <- permutations [0..9], all (== 0) [(fromDigits $ slice3 x l) `mod` p | x <- [1..7], let p = primes !! (x-1)]]
+
+--------------------------------------------------------------------------------
+-- Problem 44
+--------------------------------------------------------------------------------
+
+is_pentagonal x
+    | not $ isSquare $ 24*x + 1 = False
+    | otherwise = (1 + integerSquareRoot (24*x + 1)) `mod` 6 == 0
+
+p44 = fst $ head [(d,x) | let n = 20000000, d <- takeWhile (<= n) pentagonal_nums, x <- takeWhile (<= n) pentagonal_nums, let y = d + x, let s = x + y, is_pentagonal y, is_pentagonal s]
 
 --------------------------------------------------------------------------------
 -- Problem 45
@@ -579,6 +649,14 @@ sameDigits _ (d:dl) =
 p52 = fst $ head $ filter (uncurry sameDigits) [(x,[sort $ digits (k*x) | k <- [1..6]]) | x <- [1..]]
 
 --------------------------------------------------------------------------------
+-- Problem 53
+--------------------------------------------------------------------------------
+
+pascal l = 1:(zipWith (+) l (drop 1 l)) ++ [1]
+
+p53 = sum . map (sum . map (\x -> if x >= 10^6 then 1 else 0)) $ take 100 (iterate pascal [1,1])
+
+--------------------------------------------------------------------------------
 -- Problem 55
 --------------------------------------------------------------------------------
 
@@ -614,6 +692,12 @@ p56 = maximum $ map sumDigits [(a^b) | a <- [1..99], b <- [1..99]]
 --    (cf ++ [(fromInteger x) + ((fromInteger 1) / (head $ cf))])
 
 --filter (\cf -> ((numDigits $ numerator cf) > (numDigits $ denominator cf))) $ continuedFractionToRatio $ take 100 $ (1:(repeat 2))
+
+--------------------------------------------------------------------------------
+-- Problem 63
+--------------------------------------------------------------------------------
+
+p63 = length [x^p | x <- [1..9], p <- [1..100], 10^(p-1) <= x^p]
 
 --------------------------------------------------------------------------------
 -- Problem 65
@@ -674,8 +758,15 @@ problem69 = last $ takeWhile ((>) 1000000) $ scanl1 (*) primes
 -- Problem 76
 --------------------------------------------------------------------------------
 
---binomial n p =
+binomial' 0 0 = 1
+binomial' 1 0 = 1
+binomial' n 1 = n
+binomial' n p
+    | p < 0 = 0
+    | p > n = 0
+    | otherwise = div (product [(n-p+1)..n]) (product [2..p])
 
+binomial n p = binomial' n $ min (n-p) p
 
 --p76 = 
 
@@ -689,12 +780,117 @@ problem69 = last $ takeWhile ((>) 1000000) $ scanl1 (*) primes
 --coinPartitions n = Ordered.nubSort $ map sort $ concat $ [map (p:) (coinPartitions (n-p)) | p <- [1..n]]
 
 --------------------------------------------------------------------------------
+-- Problem 79
+--------------------------------------------------------------------------------
+
+keylog = map (digits . (read::(String -> Integer))) $ lines $ unsafePerformIO $ readFile "keylog.txt"
+keylog_ = Ordered.nubSort keylog
+
+genSeq 1 alphabet = [[a] | a <- alphabet]
+genSeq n alphabet = [a:s | a <- alphabet, s <- genSeq (n-1) alphabet]
+
+isPrefix [] _ = True
+isPrefix (x:xs) [] = False
+isPrefix (x:xs) (y:ys) = if x == y then isPrefix xs ys else False
+
+isSubsequence [] _ = True
+isSubsequence (x:xs) [] = False
+isSubsequence (x:xs) (y:ys) = if x == y then isPrefix xs ys else isSubsequence (x:xs) ys
+
+--too slow
+--[s | s <- genSeq 9 [0..9], all (flip isSubsequence s) keylog]
+
+keepShortest l =
+    let len = minimum $ map length l in
+    filter (\x -> (length x <= len)) l
+
+lcmSeqs :: (Eq a) => [a] -> [a] -> [[a]]
+lcmSeqs [] [] = [[]]
+lcmSeqs x [] = [x]
+lcmSeqs [] y = [y]
+lcmSeqs (x:xs) (y:ys) =
+    let ll = keepShortest $ lcmSeqs xs ys in
+    if x == y then map (x:) ll else keepShortest ((map (x:) $ lcmSeqs xs (y:ys)) ++ (map (y:) $ lcmSeqs (x:xs) ys))
+
+p79 = fromDigits $ head $ foldl' (\l x -> (keepShortest $ Ordered.nubSort $ concat $ map (lcmSeqs x) l)) [[]] $ keylog_
+
+--------------------------------------------------------------------------------
+-- Problem 81
+--------------------------------------------------------------------------------
+
+listToArr m = let n = (fromIntegral $ length m) in A.array ((1,1),(n,n)) [((r,c),v) | (r,l) <- zip [1..] m, (c,v) <- zip [1..] l]
+
+small_matrix = [[131,673,234,103,18],[201,96,342,965,150],[630,803,746,422,111],[537,699,497,121,956],[805,732,524,37,331]]
+small_arr = listToArr small_matrix
+
+big_matrix :: [[Integer]]
+big_matrix = map (map read) $ map (splitOn ",") $ lines $ unsafePerformIO $ readFile "matrix.txt"
+
+big_arr :: Array (Integer, Integer) Integer
+big_arr = listToArr big_matrix
+
+pathValueForCell _ _ _ (Just v) = Just v
+pathValueForCell Nothing _ _ Nothing = Nothing
+pathValueForCell _ Nothing _ Nothing = Nothing
+pathValueForCell (Just l) (Just u) cell Nothing = Just $ cell + (min l u)
+
+iterPathSumTwoWays arr parr =
+    let (r,c) = snd (A.bounds arr) in
+    A.array ((1,1),(r,c)) $ [((i,j),v) | i <- [2..r], j <- [2..c], let cell = (A.!) arr (i,j), let pcell = (A.!) parr (i,j), let up = (A.!) parr (i-1,j), let lp = (A.!) parr (i,j-1), let v = pathValueForCell lp up cell pcell] ++
+                    [((i,j),v) | let i = 1, j <- [2..c], let cell = (A.!) arr (i,j), let pcell = (A.!) parr (i,j), let lp = (A.!) parr (i,j-1), let v = pathValueForCell lp lp cell pcell] ++
+                    [((i,j),v) | let j = 1, i <- [2..r], let cell = (A.!) arr (i,j), let pcell = (A.!) parr (i,j), let up = (A.!) parr (i-1,j), let v = pathValueForCell up up cell pcell] ++
+                    [((1,1),Just $ (A.!) arr (1,1))]
+
+-- BAAAD
+--pathSumTwoWays' acc (i,j) arr =
+--    trace (show (i,j)) (
+--        let (bi,bj) = snd $ A.bounds arr
+--            nacc = acc + (A.!) arr (i,j) in
+--        if (i,j) == (bi,bj)
+--        then nacc
+--        else (
+--            if ((i < bi) && (j < bj))
+--            then min (pathSumTwoWays' nacc (i+1,j) arr) (pathSumTwoWays' nacc (i,j+1) arr)
+--            else (
+--                if ((i == bi) && (j < bj))
+--                then pathSumTwoWays' nacc (i,j+1) arr
+--                else pathSumTwoWays' nacc (i+1,j) arr
+--            )
+--        )
+--    )
+
+pathSumTwoWays' arr parr =
+    let (r,c) = snd (A.bounds arr) in
+    case (A.!) parr (r,c) of
+        Nothing -> pathSumTwoWays' arr $ iterPathSumTwoWays arr parr
+        Just v -> v
+
+pathSumTwoWays arr =
+    let (r,c) = snd (A.bounds arr)
+        parr = A.array (A.bounds arr) $ (((1,1),(Just $ (A.!) arr (1,1)))):[((i,j),v) | i <- [1..r], j <- [1..c], (i,j) /= (1,1), let v = Nothing] in
+    pathSumTwoWays' arr parr
+
+p81 = pathSumTwoWays big_arr
+
+--------------------------------------------------------------------------------
 -- Problem 87
 --------------------------------------------------------------------------------
 
 primesBelow n = takeWhile (<= n) primes
 
 p87 = length $ takeWhile (<= 50000000) $ Ordered.nubSort [p^2 + q^3 + r^4 | p <- primesBelow 7500, q <- primesBelow 400, r <- primesBelow 90]
+
+--------------------------------------------------------------------------------
+-- Problem 92
+--------------------------------------------------------------------------------
+
+squareDigit = sum . map (^2) . digits
+
+squareDigitChain 1 = 0
+squareDigitChain 89 = 1
+squareDigitChain n = squareDigitChain $ squareDigit n
+
+p92 = sum [squareDigitChain n | n <- [1..10^7]]
 
 --------------------------------------------------------------------------------
 -- Problem 94
@@ -707,6 +903,22 @@ problem94 = sum [3*a+eps | a <- [2..10^9], eps <- [1,-1], isSquare ((3*a+eps)*(a
 --------------------------------------------------------------------------------
 
 p97 = mod (1 + (28433 * (expMod 2 7830457 (10^10)))) (10^10)
+
+--------------------------------------------------------------------------------
+-- Problem 99
+--------------------------------------------------------------------------------
+
+p99 = fst $ last $ sortBy (compare `on` snd)[(i,(fromInteger b)*(log $ fromInteger a)) | (i,[a,b]) <- zip [1..] base_exp]
+    where
+        base_exp = map (map (read::(String -> Integer))) $ map (splitOn ",") $ lines $ unsafePerformIO $ readFile "base_exp.txt"
+
+--------------------------------------------------------------------------------
+-- Problem 104
+--------------------------------------------------------------------------------
+
+--[k | (k,f) <- zip [0..] (fibsMod $ 10^10), is_pandigital 1 9 (fromIntegral f)]
+
+p104 = head [k | (k,f) <- zip [0..] (fibsMod $ 10^10), is_pandigital19 (fromIntegral f), let ff = explicitFib k, let d = digits ff, (==) [1..9] $ sort $ take 9 d]
 
 --------------------------------------------------------------------------------
 -- Problem 120
@@ -799,6 +1011,20 @@ dividingPrimes = [11,17,41,73,101,137,251,257,271,353,401,449,641,751,1201,1409,
 p133 = sum $ Ordered.minus [p | p <- takeWhile ((>) (10^5)) primes] dividingPrimes
 
 --------------------------------------------------------------------------------
+-- Problem 148
+--------------------------------------------------------------------------------
+
+binomial7 = UV.generate 49 (\x -> flip mod 7 $ binomial (div x 7) (mod x 7))
+
+binomialMod :: Integral a => a -> a -> a -> a
+binomialMod m n p = foldl' (\a b -> ((a*b) `mod` p)) 1 $ zipWith (\mi ni -> binomial mi ni) (digitsBase' p m) (digitsBase' p n)
+
+binomialMod7 :: Int -> Int -> Int
+binomialMod7 m n = foldl' (\a b -> ((a*b) `mod` 7)) 1 $! zipWith (\mi ni -> (UV.!) binomial7 (7*mi+ni)) (digitsBase' 7 m) (digitsBase' 7 n)
+
+p148_28id = ([length $ filter (/= 0) $ [binomialMod7 n p | n <- [0..((7^m)-1)], p <- [0..n]] | m <- [0..4]] == [28^m | m <- [0..4]])
+
+--------------------------------------------------------------------------------
 -- Problem 160
 --------------------------------------------------------------------------------
 
@@ -844,6 +1070,26 @@ p206u = 1929394959697989990
 sqp206u = 1 + (integerSquareRoot p206u)
 
 --------------------------------------------------------------------------------
+-- Problem 243
+--------------------------------------------------------------------------------
+
+resilience :: Integer -> Double
+resilience n = (totient n) / (fromIntegral (n-1))
+
+resilience' :: Integer -> Double
+resilience' n = (resilience n) - ((15499)::Double)/94744
+
+--l1 = take 10 $ filter (\n -> (94744 * totient' n) < (15499 * (n-1))) $ map (foldl' (*) 1) $ subsequences primes
+--l2 = take 10 $ filter (\n -> (94744 * totient' n) < (15499 * (n-1))) $ (scanl1 lcm [1..])
+
+-- + guesswork
+
+-- http://www.research.att.com/~njas/sequences/A060735
+
+p243 :: Integer
+p243 = product [2,2,2,3,5,7,11,13,17,19,23]
+
+--------------------------------------------------------------------------------
 -- Problem 249
 --------------------------------------------------------------------------------
 
@@ -867,15 +1113,17 @@ sumFromSubsets' l m s = f l $! UV.generate s $ \x -> if x == 0 then 1 else 0
     where
         f [] acc = acc
         f l v = f' l v
+        f' [] _ = error "Shouldn't happen"
         f' (x:xs) v =
             let w = (UV.++) (UV.replicate x 0) (UV.unsafeTake (s-x) v) in
             f xs $! UV.zipWith (\a b -> (a+b) `mod` m) v w
 
+p249 :: Int
 p249 = foldl' f 0 [n | (s,n) <- (UV.toList $ UV.imap (\a b -> (a,b)) sfs), n > 0, (isPrime . fromIntegral) s] --foldl' f 0 $ 
     where
         p = (takeWhile (<= 5000) primes)
-        sfs = sumFromSubsets' p (10^16) (sum p + 1)
-        f a b = (a+b) `mod` (10^16)
+        sfs = sumFromSubsets' p tenToTheSixteenth (sum p + 1)
+        f a b = (a+b) `mod` tenToTheSixteenth
 
 --------------------------------------------------------------------------------
 -- Problem 250
@@ -890,20 +1138,23 @@ modSumFromSubsets' l m n = f l $! UV.generate m $ \x -> if x == 0 then 1 else 0
             let w = UV.unsafeBackpermute v (UV.generate m (\y -> (y + x) `mod` m)) in
             f xs $! UV.zipWith (\a b -> (a+b) `mod` n) v w
 
-p250 = ((UV.!) (modSumFromSubsets' ([expMod n n 250 | n <- [1..250250]]) 250 (10^16)) 0) - 1
+p250 :: Int
+p250 = ((UV.!) (modSumFromSubsets' ([expMod n n 250 | n <- [1..250250]]) 250 tenToTheSixteenth) 0) - 1
 
 --------------------------------------------------------------------------------
 -- Problem 448
 --------------------------------------------------------------------------------
 
+average :: Integral a => [a] -> a
 average l = 
-    let (s,t) = foldl' (\(s,t) n -> ((s+n),(t+1))) (0,0) l in s `div` t
+    let (s,t) = foldl' (\(x,y) n -> ((x+n),(y+1))) (0,0) l in s `div` t
 
-a n = average [lcm i n | i <- [1..n]]
+--a :: Integral a => a -> a
+--a n = average [lcm i n | i <- [1..n]]
 
 --------------------------------------------------------------------------------
 -- Main
 --------------------------------------------------------------------------------
 
-main = do
-    putStrLn $ show $ p249
+--main = do putStrLn $ show $ [k | (k,f) <- zip [0..] (fibsMod $ 10^10), is_pandigital19 (fromIntegral f)] !! 100
+--main = do putStrLn $ show [s | s <- genSeq 9 [0..9], all (flip isSubsequence s) keylog]
