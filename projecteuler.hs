@@ -1,13 +1,15 @@
 
 --import Prelude hiding ((^))
 --import qualified Prelude
-import Data.Array as A
+import qualified Data.Array as A
 import Data.Char
 import Data.List
 import Data.List.Split
 import Data.Maybe
 import Data.Tuple
 import Data.Int
+--import Data.Time.Calendar (fromGregorian)
+--import Data.Time.Calendar.WeekDate (toWeekDate) 
 -- there's an excellent library that provides us with a list of primes: let's use it
 import Data.Numbers.Primes (primes)
 import qualified Data.Vector as V
@@ -19,6 +21,7 @@ import qualified Data.IntMap as IntMap
 import qualified Data.Map as Map
 import Math.NumberTheory.Powers.Squares (isSquare, integerSquareRoot)
 import Math.NumberTheory.Primes.Testing (isPrime)
+import Math.NumberTheory.Logarithms (integerLogBase)
 import Data.Ratio
 import System.IO.Unsafe
 
@@ -364,8 +367,13 @@ p18 = maximum $ maxPath $ reverse triangle1
 -- Problem 19
 --------------------------------------------------------------------------------
 
---Jan 1st 1901 was a Tuesday
---f m = length $ filter (== 0) $ scanl (\a b -> ((a+b) `mod` 7)) m [(365 + if (n `mod` 4) == 0 then 1 else 0) `mod` 7 | n <- [1901..2000]]
+-- I may be cheating, but I'm not counting the fuckin' Sundays
+
+--isSunday y m d = (==) 7 $ (\(a,b,c) -> c) $ toWeekDate $ fromGregorian y m d
+
+--p19 = length $ filter (== True) $ [isSunday y m 1 | y <- [1901..2000], m <- [1..12]]
+
+--solved, but there's an issue with the dependencies
 
 --------------------------------------------------------------------------------
 -- Problem 20
@@ -417,6 +425,15 @@ p24 = (sort $ permutations [0..9]) !! ((10^6)-1)
 -- the explicit formula for F_n yields
 
 problem25 = floor $ (999*(log 10) + (log $ sqrt 5)) / (log $ ((1 + (sqrt 5))/2)) + 0.5
+
+--------------------------------------------------------------------------------
+-- Problem 26
+--------------------------------------------------------------------------------
+
+periodLength n = head [p | p <- [1..], expMod 10 p n == 1]
+
+p26 = fst $ last $ sortBy (compare `on` snd) [(n, periodLength n) | n <- takeWhile (<= 1000) primes, not $ Ordered.subset (map fst $ decomp n) [2,5]]
+
 
 --------------------------------------------------------------------------------
 -- Problem 27
@@ -529,8 +546,18 @@ p36 = sum $ takeWhile (<= 10^6) $ Ordered.isect (palindromes 2) (palindromes 10)
 -- Problem 37
 --------------------------------------------------------------------------------
 
-truncatR n = n `div` 10
+isTruncatablePrime f n
+    | isPrime n == False = False
+    | n < 10 = True
+    | otherwise = isTruncatablePrime f $ f n
 
+isRightTruncatablePrime = isTruncatablePrime truncatR
+isLeftTruncatablePrime = isTruncatablePrime truncatL
+
+truncatR n = n `div` 10
+truncatL n = rem n $ 10 ^ (integerLogBase 10 n)
+
+p37 = sum $ take 11 $ filter (>= 10) $ filter isRightTruncatablePrime $ filter isLeftTruncatablePrime primes
 
 --------------------------------------------------------------------------------
 -- Problem 39
@@ -832,7 +859,7 @@ small_arr = listToArr small_matrix
 big_matrix :: [[Integer]]
 big_matrix = map (map read) $ map (splitOn ",") $ lines $ unsafePerformIO $ readFile "matrix.txt"
 
-big_arr :: Array (Integer, Integer) Integer
+big_arr :: A.Array (Integer, Integer) Integer
 big_arr = listToArr big_matrix
 
 pathValueForCell _ _ _ (Just v) = Just v
@@ -1162,5 +1189,5 @@ average l =
 -- Main
 --------------------------------------------------------------------------------
 
-main = do putStrLn $ show p71
+--main = do putStrLn $ show p71
 --main = do putStrLn $ show [s | s <- genSeq 9 [0..9], all (flip isSubsequence s) keylog]
