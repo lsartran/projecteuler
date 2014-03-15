@@ -2,6 +2,7 @@
 --import Prelude hiding ((^))
 --import qualified Prelude
 import qualified Data.Array as A
+import Data.Bits hiding (rotate)
 import Data.Char
 import Data.List
 import Data.List.Split
@@ -38,6 +39,8 @@ is_pandigital n m d = (==) [n..m] $ sort $ digits d
 is_pandigital19 :: Integer -> Bool
 is_pandigital19 d = ((d `mod` 9) == 0) && is_pandigital 1 9 d
 --is_pandigital19 = is_pandigital 1 9
+
+isPandigital19 = is_pandigital19
 
 tenToTheSixteenth :: Int
 tenToTheSixteenth = (10^16)
@@ -114,6 +117,9 @@ sumDivisors n = (sum $ divisors n)
 
 sumProperDivisors :: Integer -> Integer
 sumProperDivisors n = (-) (sum $ divisors n) n
+
+sumSquaredDivisors :: Integer -> Integer
+sumSquaredDivisors = sum . map (^2) . divisors
 
 isAmicable :: Integer -> Bool
 isAmicable n =
@@ -430,10 +436,9 @@ problem25 = floor $ (999*(log 10) + (log $ sqrt 5)) / (log $ ((1 + (sqrt 5))/2))
 -- Problem 26
 --------------------------------------------------------------------------------
 
-periodLength n = head [p | p <- [1..], expMod 10 p n == 1]
+periodLength n = head [p | p <- divisors $ totient' n, expMod 10 p n == 1]
 
 p26 = fst $ last $ sortBy (compare `on` snd) [(n, periodLength n) | n <- takeWhile (<= 1000) primes, not $ Ordered.subset (map fst $ decomp n) [2,5]]
-
 
 --------------------------------------------------------------------------------
 -- Problem 27
@@ -560,6 +565,14 @@ truncatL n = rem n $ 10 ^ (integerLogBase 10 n)
 p37 = sum $ take 11 $ filter (>= 10) $ filter isRightTruncatablePrime $ filter isLeftTruncatablePrime primes
 
 --------------------------------------------------------------------------------
+-- Problem 38
+--------------------------------------------------------------------------------
+
+concatenatedProduct x l = fromDigits $ concat $ map digits $ map (* x) l
+
+p38 = last $ sort [z | x <- [1..98765], let ymax = floor $ 9 / (fromIntegral (1 + integerLogBase 10 x)), y <- [2..ymax], let z = concatenatedProduct x [1..y], isPandigital19 z]
+
+--------------------------------------------------------------------------------
 -- Problem 39
 --------------------------------------------------------------------------------
 
@@ -640,6 +653,12 @@ p46 = head $ Ordered.minus (Ordered.minus [3,5..] primes) (Ordered.nubSort [r | 
 
 --problem47 = [(n,n+1,n+2,n+3) | n <- [1..], (==) 4 (length $ uniqueFactors n), (==) 4 (length $ uniqueFactors $ n+1), (==) 4 (length $ uniqueFactors $ n+2), (==) 4 (length $ uniqueFactors $ n+3)]
 
+distinctPrimeFactors = length . decomp
+
+distinctPrimeFactorsAbove m n = distinctPrimeFactors n >= m
+
+p47 = head [x | x <- [1..], all (distinctPrimeFactorsAbove 4) [x+eps | eps <- [0..3]]]
+
 --------------------------------------------------------------------------------
 -- Problem 48
 --------------------------------------------------------------------------------
@@ -665,6 +684,24 @@ problem49 =
         eligibleSet = filter (\(a,b,c) -> (sortedDigits b) == (sortedDigits c)) $ filter (\(a,b,c) -> (sortedDigits a) == (sortedDigits b)) $ [(a,b,2*b-a) | a <- fourDigitsPrimes, b <- fourDigitsPrimes, b > a, (2*b-a) `Ordered.member` fourDigitsPrimes]
         (a,b,c) = eligibleSet !! 1 in
         c+10000*(b+10000*a)
+
+--------------------------------------------------------------------------------
+-- Problem 50
+--------------------------------------------------------------------------------
+
+sumConsecutive' n l =
+    let (a,b) = splitAt n l
+        la = length a in
+    if la < n then [] else (sum a):sumConsecutive' n b
+
+sumConsecutive n l =
+    concat $ transpose [sumConsecutive' n $ drop m l | m <- [0..(n-1)]]
+
+primeSumOfConsecutivePrimes m n =
+    let p = takeWhile (<= m) primes in
+    Ordered.isect p $ sumConsecutive n $ p
+
+p50 = snd $ last [(n,p) | n <- [501,503..599], p <- primeSumOfConsecutivePrimes (10^6) n]
 
 --------------------------------------------------------------------------------
 -- Problem 52
@@ -719,6 +756,25 @@ p56 = maximum $ map sumDigits [(a^b) | a <- [1..99], b <- [1..99]]
 --    (cf ++ [(fromInteger x) + ((fromInteger 1) / (head $ cf))])
 
 --filter (\cf -> ((numDigits $ numerator cf) > (numDigits $ denominator cf))) $ continuedFractionToRatio $ take 100 $ (1:(repeat 2))
+
+--------------------------------------------------------------------------------
+-- Problem 59
+--------------------------------------------------------------------------------
+
+readInt :: String -> Int
+readInt = read
+
+cipher1 = map (readInt) $ splitOn "," $ init $ unsafePerformIO $ readFile "cipher1.txt"
+
+cipher1_3 = map (map snd) $ groupBy (\a b -> fst a == fst b) $ sortBy (compare `on` fst) $ zip (cycle [0,1,2]) cipher1
+
+p59_key = map (xor (ord 'e') . fromIntegral) $ [snd $ (reverse $ sortBy (compare `on` fst) $ rle $ sort $ cipher1_3 !! i) !! j | (i,j) <- [(0,1),(1,2),(2,1)]]
+
+decrypt :: [Int] -> [Int] -> [Int]
+decrypt k c = zipWith xor (cycle k) c
+encrypt = decrypt
+
+p59 = sum $ decrypt p59_key cipher1
 
 --------------------------------------------------------------------------------
 -- Problem 63
@@ -780,6 +836,12 @@ n_over_phi_n n =
     (fromInteger n) / (totient n)
 
 problem69 = last $ takeWhile ((>) 1000000) $ scanl1 (*) primes
+
+--------------------------------------------------------------------------------
+-- Problem 70
+--------------------------------------------------------------------------------
+
+p70 = (\(a,b,c) -> a) $ head $ sortBy (compare `on` (\(a,b,c) -> c)) [(n,m,(fromIntegral n)/(fromIntegral m)) | n <- [2..(10^7-1)], let m = totient' n, m `mod` 9 == n `mod` 9, (sort $ digits m) == (sort $ digits n)]
 
 --------------------------------------------------------------------------------
 -- Problem 71
@@ -846,6 +908,14 @@ lcmSeqs (x:xs) (y:ys) =
     if x == y then map (x:) ll else keepShortest ((map (x:) $ lcmSeqs xs (y:ys)) ++ (map (y:) $ lcmSeqs (x:xs) ys))
 
 p79 = fromDigits $ head $ foldl' (\l x -> (keepShortest $ Ordered.nubSort $ concat $ map (lcmSeqs x) l)) [[]] $ keylog_
+
+--------------------------------------------------------------------------------
+-- Problem 80
+--------------------------------------------------------------------------------
+
+p80 = sum [f n | n <- [2..99], not $ Ordered.member n $ map (^2) [1..]]
+    where
+        f x = sum $ digits $ integerSquareRoot $ x*(10^(2*(100-(1+(integerLogBase 10 $ integerSquareRoot x)))))
 
 --------------------------------------------------------------------------------
 -- Problem 81
@@ -1087,11 +1157,49 @@ factorialTrailingDigits n = trace (show n) $ factorialTrailingDigits' n 1
 p179 = let nd = [(n,nDivisors n) | n <- [2..(10^7)-1]] in seq nd $ length $ filter (\((n,dn),(m,dm)) -> (dn == dm)) $ zip nd $ tail nd
 
 --------------------------------------------------------------------------------
+-- Problem 182
+--------------------------------------------------------------------------------
+
+--f e n = length $ filter (== True) $ [m == expMod m e n | m <- [0..(n-1)]]
+
+--numUnconcealedMessages e n = f (n-1) 0
+--    where
+--        f (-1) acc = acc
+--        f m acc = f (m-1) (acc + (if m == expMod m e n then 1 else 0))
+
+--main = do putStrLn $ show $ let p = 19 in let q = 37 in let phi = (p-1)*(q-1) in let n = p*q in [(e,unconcealed) | e <- [1..phi-1], gcd phi e == 1, let unconcealed = numUnconcealedMessages e n]
+
+--------------------------------------------------------------------------------
+-- Problem 187
+--------------------------------------------------------------------------------
+
+--p187 = length $ foldl' Ordered.union [] [[x*y | y <- takeWhile (<= div n x) primes] | x <- takeWhile (<= (div n 2)) primes]
+--    where n = 1000000
+
+-- a wee bit too slow
+p187 = length $ Ordered.nubSort [x*y | x <- takeWhile (<= (div n 2)) ps, y <- takeWhile (<= div n x) ps]
+    where
+        n = 10*(10^7)
+        ps = takeWhile (<= n) primes
+
+--------------------------------------------------------------------------------
 -- Problem 188
 --------------------------------------------------------------------------------
 
 --hyperExp x 1 m = a `mod` m
 --hyperExp x k m = expMod a ()
+
+--------------------------------------------------------------------------------
+-- Problem 190
+--------------------------------------------------------------------------------
+
+-- using pencil & paper & Langrangian method we get the expression of Pm
+
+p190 = sum [p m | m <- [2..15]] where
+    p m =
+        let m' = (fromIntegral m)::Double in
+        floor $ (fromIntegral $ product [i^i | i <- [1..m]]) * ((2::Double) / (m'+1.0))^(div (m*(m+1)) 2)
+
 
 --------------------------------------------------------------------------------
 -- Problem 206
@@ -1189,5 +1297,5 @@ average l =
 -- Main
 --------------------------------------------------------------------------------
 
---main = do putStrLn $ show p71
+--main = do putStrLn $ show $ let p = 19 in let q = 37 in let phi = (p-1)*(q-1) in let n = p*q in [(e,unconcealed) | e <- [1..phi-1], gcd phi e == 1, let unconcealed = numUnconcealedMessages e n]
 --main = do putStrLn $ show [s | s <- genSeq 9 [0..9], all (flip isSubsequence s) keylog]
