@@ -725,13 +725,14 @@ p53 = sum . map (sum . map (\x -> if x >= 10^6 then 1 else 0)) $ take 100 (itera
 --------------------------------------------------------------------------------
 
 revAndAdd n =
-    n + (foldl' (\x y -> x*10 + y) 0 $ digits' 123)
+    n + (foldl' (\x y -> x*10 + y) 0 $ digits' n)
 
 isLychrel n = isLychrel' n 50
     where
-        isLychrel' n 0 = False
-        isLychrel' n it = isLychrel' (revAndAdd n) (it - 1)
+        isLychrel' n 0 = True
+        isLychrel' n it = if isPalindromic 10 (revAndAdd n) then False else isLychrel' (revAndAdd n) (it - 1)
 
+p55 = length $ filter isLychrel [1..10000]
 
 --------------------------------------------------------------------------------
 -- Problem 56
@@ -1022,6 +1023,26 @@ p99 = fst $ last $ sortBy (compare `on` snd)[(i,(fromInteger b)*(log $ fromInteg
 --[k | (k,f) <- zip [0..] (fibsMod $ 10^10), is_pandigital 1 9 (fromIntegral f)]
 
 p104 = head [k | (k,f) <- zip [0..] (fibsMod $ 10^10), is_pandigital19 (fromIntegral f), let ff = explicitFib k, let d = digits ff, (==) [1..9] $ sort $ take 9 d]
+
+--------------------------------------------------------------------------------
+-- Problem 112
+--------------------------------------------------------------------------------
+
+increasingNumbers' 1 = [1..9]
+increasingNumbers' n = [ m' | m <- increasingNumbers' (n-1), let r = rem m 10, x <- [r..9], let m' = (10*m) + x]
+
+increasingNumbers = concat [increasingNumbers' n | n <- [1..]]
+
+decreasingNumbers' 1 = [1..9]
+decreasingNumbers' n = [ m' | m <- decreasingNumbers' (n-1), let r = rem m 10, x <- [0..r], let m' = (10*m) + x]
+
+decreasingNumbers = concat [decreasingNumbers' n | n <- [1..]]
+
+nonBouncyNumbers = Ordered.union increasingNumbers decreasingNumbers
+
+bouncyNumbers = Ordered.minus [1..] nonBouncyNumbers
+
+p112 = snd $ fst $ head $ dropWhile ((< 0) . snd) $ zipWith (\a b -> ((a,b),100*a - 99*b)) [1..] bouncyNumbers
 
 --------------------------------------------------------------------------------
 -- Problem 120
