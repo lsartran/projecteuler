@@ -744,19 +744,8 @@ p56 = maximum $ map sumDigits [(a^b) | a <- [1..99], b <- [1..99]]
 -- Problem 57
 --------------------------------------------------------------------------------
 
---numDigits :: Integer -> Integer
---numDigits n
---    | n < 0 = error "Non-negative integers only"
---    | n <= 9 = 1
---    | otherwise = 1 + (numDigits $ div n 10)
-
---continuedFractionToRatio :: [Integer] -> [Ratio Integer]
---continuedFractionToRatio [x] = [x % 1]
---continuedFractionToRatio (x:xs) =
---    let cf = continuedFractionToRatio xs in
---    (cf ++ [(fromInteger x) + ((fromInteger 1) / (head $ cf))])
-
---filter (\cf -> ((numDigits $ numerator cf) > (numDigits $ denominator cf))) $ continuedFractionToRatio $ take 100 $ (1:(repeat 2))
+p57 = length $ filter (\x -> (length $ digits $ numerator x) > (length $ digits $ denominator x)) frac
+    where frac = drop 1 $ reverse $ convergents $ reverse $ take (1+1000) $ (1:repeat 2)
 
 --------------------------------------------------------------------------------
 -- Problem 59
@@ -849,6 +838,12 @@ p70 = (\(a,b,c) -> a) $ head $ sortBy (compare `on` (\(a,b,c) -> c)) [(n,m,(from
 --------------------------------------------------------------------------------
 
 p71 = numerator $ maximum [i % j | j <- [2..1000000], let i = floor $ 3.0 * (fromIntegral j) / 7.0, (i%j) < (3%7)]
+
+--------------------------------------------------------------------------------
+-- Problem 73
+--------------------------------------------------------------------------------
+
+p73 = length $ Ordered.nubSort [x | d <- [1..12000], i <- [1..(d-1)], let x = i%d, (1%3) < x, x < (1%2)]
 
 --------------------------------------------------------------------------------
 -- Problem 76
@@ -1043,6 +1038,18 @@ nonBouncyNumbers = Ordered.union increasingNumbers decreasingNumbers
 bouncyNumbers = Ordered.minus [1..] nonBouncyNumbers
 
 p112 = snd $ fst $ head $ dropWhile ((< 0) . snd) $ zipWith (\a b -> ((a,b),100*a - 99*b)) [1..] bouncyNumbers
+
+--------------------------------------------------------------------------------
+-- Problem 113
+--------------------------------------------------------------------------------
+
+numIncreasingNumbers' n = binomial (n+8) 8
+
+numDecreasingNumbers' n = (binomial (n+9) 9) - 1
+
+numNonBouncyNumbers' n = (numIncreasingNumbers' n) + (numDecreasingNumbers' n) - 9
+
+p113 = sum [numNonBouncyNumbers' m | m <- [1..100]]
 
 --------------------------------------------------------------------------------
 -- Problem 120
@@ -1315,8 +1322,32 @@ average l =
 --a n = average [lcm i n | i <- [1..n]]
 
 --------------------------------------------------------------------------------
+-- Problem 463
+--------------------------------------------------------------------------------
+
+f 1 = 1
+f 3 = 3
+f n
+    | n `rem` 2 == 0 = f (n `div` 2)
+    | n `rem` 4 == 1 = 2 * f ((n+1) `div` 2) - f ((n-1) `div` 4)
+    | n `rem` 4 == 3 = 3 * f ((n-1) `div` 2) - 2 * (f ((n-1) `div` 4))
+
+-- f n = greatest odd divisor of n... nope
+
+s n = sum [f i | i <- [1..n]]
+
+s' 0 = 0
+s' 1 = 1
+s' n
+    | n `rem` 2 == 0 = let p = n `div` 2 in (p^2) + s' p
+    | n `rem` 2 == 1 = let p = n `div` 2 in ((p+1)^2) + s' p
+
+--------------------------------------------------------------------------------
 -- Main
 --------------------------------------------------------------------------------
 
+--putShow = putStrLn . show
+
+--main = do putShow $ length $ Ordered.nubSort [x | d <- [1..12000], i <- [1..(d-1)], let x = i%d, (1%3) < x, x < (1%2)]
 --main = do putStrLn $ show $ let p = 19 in let q = 37 in let phi = (p-1)*(q-1) in let n = p*q in [(e,unconcealed) | e <- [1..phi-1], gcd phi e == 1, let unconcealed = numUnconcealedMessages e n]
 --main = do putStrLn $ show [s | s <- genSeq 9 [0..9], all (flip isSubsequence s) keylog]
