@@ -23,6 +23,8 @@ import qualified Data.Map as Map
 import Math.NumberTheory.Powers.Squares (isSquare, integerSquareRoot)
 import Math.NumberTheory.Primes.Testing (isPrime)
 import Math.NumberTheory.Logarithms (integerLogBase)
+import Math.Polynomial
+import Math.Polynomial.Interpolation
 import Data.Ratio
 import System.IO.Unsafe
 
@@ -450,13 +452,15 @@ p27 = uncurry (*) $ fst $ head $ sortBy (flip compare `on` snd) $ [((a,b),length
 -- Problem 28
 --------------------------------------------------------------------------------
 
+spiralDiag1 nmax = [(2*n+1)^2 | n <- [1..nmax]]
+spiralDiag2 nmax = [2*n*(2*n-1)+1 | n <- [1..nmax]]
+spiralDiag3 nmax = [(2*n)^2 + 1 | n <- [1..nmax]]
+spiralDiag4 nmax = [(2*n)^2 + (2*n) + 1 | n <- [1..nmax]]
+
 p28 :: Integer
-p28 = 1 + sum diag1 + sum diag2 + sum diag3 + sum diag4 where
-    nmax = 500
-    diag1 = [(2*n+1)^2 | n <- [1..nmax]]
-    diag2 = [2*n*(2*n-1)+1 | n <- [1..nmax]]
-    diag3 = [(2*n)^2 + 1 | n <- [1..nmax]]
-    diag4 = [(2*n)^2 + (2*n) + 1 | n <- [1..nmax]]
+p28 = 1 + sum (spiralDiag1 nmax) + sum (spiralDiag2 nmax) + sum (spiralDiag3 nmax) + sum (spiralDiag4 nmax) where nmax = 500
+
+spiralDiags nmax = transpose [spiralDiag1 nmax, spiralDiag2 nmax, spiralDiag3 nmax, spiralDiag4 nmax]
 
 --------------------------------------------------------------------------------
 -- Problem 29
@@ -748,6 +752,16 @@ p57 = length $ filter (\x -> (length $ digits $ numerator x) > (length $ digits 
     where frac = drop 1 $ reverse $ convergents $ reverse $ take (1+1000) $ (1:repeat 2)
 
 --------------------------------------------------------------------------------
+-- Problem 58
+--------------------------------------------------------------------------------
+
+--p58 = head [m | n <- [5000..], let m = 2*n + 1, let sd = (spiralDiags m), let p = length $ filter isPrime sd, let q = length sd, (p%q) < (1/10)]
+
+p58 = (\x -> x-1) $ (*2) $ snd $ head $ filter (\(x,n) -> (x < 1%10)) $ drop 1 $ zip (zipWith (%) (scanl (+) 0 $ psd) ([1+4*n | n <- [0..]])) [1..]
+    where
+        psd = map (length . filter isPrime) $ spiralDiags 100000
+        sd = map (length) $ spiralDiags 1000000
+--------------------------------------------------------------------------------
 -- Problem 59
 --------------------------------------------------------------------------------
 
@@ -1010,6 +1024,18 @@ p97 = mod (1 + (28433 * (expMod 2 7830457 (10^10)))) (10^10)
 p99 = fst $ last $ sortBy (compare `on` snd)[(i,(fromInteger b)*(log $ fromInteger a)) | (i,[a,b]) <- zip [1..] base_exp]
     where
         base_exp = map (map (read::(String -> Integer))) $ map (splitOn ",") $ lines $ unsafePerformIO $ readFile "base_exp.txt"
+
+--------------------------------------------------------------------------------
+-- Problem 101
+--------------------------------------------------------------------------------
+
+u :: Integer -> Ratio Integer
+u n = evalPoly (poly LE $ take 11 $ cycle ([1,-1]::[Ratio Integer])) (fromIntegral n)
+
+op :: Integer -> Integer -> Ratio Integer
+op k n = polyInterp [(i % 1, u i) | i <- [1..k]] (n % 1)
+
+p101 = numerator $ sum [op k (k+1) | k <- [1..10]]
 
 --------------------------------------------------------------------------------
 -- Problem 104
@@ -1348,6 +1374,7 @@ s' n
 
 --putShow = putStrLn . show
 
+--main = do putShow $ head [m | n <- [5000..], let m = 2*n + 1, let sd = (spiralDiags m), let p = length $ filter isPrime sd, let q = length sd, (p%q) < (1/10)]
 --main = do putShow $ length $ Ordered.nubSort [x | d <- [1..12000], i <- [1..(d-1)], let x = i%d, (1%3) < x, x < (1%2)]
 --main = do putStrLn $ show $ let p = 19 in let q = 37 in let phi = (p-1)*(q-1) in let n = p*q in [(e,unconcealed) | e <- [1..phi-1], gcd phi e == 1, let unconcealed = numUnconcealedMessages e n]
 --main = do putStrLn $ show [s | s <- genSeq 9 [0..9], all (flip isSubsequence s) keylog]
