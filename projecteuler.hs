@@ -19,8 +19,10 @@ import qualified Data.List.Ordered as Ordered
 import Data.Function (on)
 import Debug.Trace (trace)
 import qualified Data.IntMap as IntMap
+import qualified Data.IntMap.Strict as IntMapS
 import qualified Data.Map as Map
 import Math.NumberTheory.Powers.Squares (isSquare, integerSquareRoot)
+import Math.NumberTheory.Powers.Cubes (isCube)
 import Math.NumberTheory.Primes.Testing (isPrime)
 import Math.NumberTheory.Logarithms (integerLogBase)
 import Math.Polynomial
@@ -781,6 +783,12 @@ encrypt = decrypt
 p59 = sum $ decrypt p59_key cipher1
 
 --------------------------------------------------------------------------------
+-- Problem 62
+--------------------------------------------------------------------------------
+
+p62 = (\x -> x^3) $ minimum $ map (minimum . snd) $ filter (\(a,b) -> length b == 5) $ Map.toAscList $ foldl' (\a b -> Map.insertWith (++) (sort $ digits $ b^3) [b] a) Map.empty [1..9999]
+
+--------------------------------------------------------------------------------
 -- Problem 63
 --------------------------------------------------------------------------------
 
@@ -874,6 +882,22 @@ binomial' n p
 binomial n p = binomial' n $ min (n-p) p
 
 --p76 = 
+
+--------------------------------------------------------------------------------
+-- Problem 77
+--------------------------------------------------------------------------------
+
+primeSummation 0 = [[]]
+primeSummation n = Ordered.nubSort [Ordered.insertBag p s | p <- takeWhile (<= n) primes, s <- primeSummation (n-p)]
+
+primeSummation' :: Int -> IntMap.IntMap [[Int]]
+primeSummation' 0 = IntMap.singleton 0 [[]]
+primeSummation' n =
+    let sums = primeSummation' (n-1)
+        newsum = Ordered.nubSort [Ordered.insertBag p s | p <- takeWhile (<= n) primes, s <- fromJust $ IntMap.lookup (n-p) sums] in
+    IntMap.insert n newsum sums
+
+p77 = head [n | (n,m) <- IntMap.toList $ IntMap.map length $ primeSummation' 100, m >= 5000]
 
 --------------------------------------------------------------------------------
 -- Problem 78
@@ -992,6 +1016,19 @@ p81 = pathSumTwoWays big_arr
 primesBelow n = takeWhile (<= n) primes
 
 p87 = length $ takeWhile (<= 50000000) $ Ordered.nubSort [p^2 + q^3 + r^4 | p <- primesBelow 7500, q <- primesBelow 400, r <- primesBelow 90]
+
+--------------------------------------------------------------------------------
+-- Problem 91
+--------------------------------------------------------------------------------
+
+isRightTriangle xP yP xQ yQ =
+    let [a2,b2,c2] = sort [xP^2+yP^2,(xQ-xP)^2+(yQ-yP)^2,xQ^2+yQ^2] in ((xP,yP) /= (0,0) && (xQ,yQ) /= (0,0) && (xP,yP) /= (xQ,yQ) && (c2 == (a2 + b2)))
+
+
+numRightTrianglesWithOrigin n =
+    length $ [((xP,yP),(xQ,yQ)) | xP <- [0..n], yP <- [0..n], xQ <- [0..n], yQ <- [0..n], (xP,yP) < (xQ,yQ), isRightTriangle xP yP xQ yQ]
+
+p91 = numRightTrianglesWithOrigin 50
 
 --------------------------------------------------------------------------------
 -- Problem 92
