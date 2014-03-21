@@ -1038,6 +1038,30 @@ op k n = polyInterp [(i % 1, u i) | i <- [1..k]] (n % 1)
 p101 = numerator $ sum [op k (k+1) | k <- [1..10]]
 
 --------------------------------------------------------------------------------
+-- Problem 102
+--------------------------------------------------------------------------------
+
+det2d :: (Integer,Integer) -> (Integer,Integer) -> Integer
+det2d (x0,y0) (x1,y1) = x0*y1 - x1*y0
+
+barycentricCoordinatesOfOrigin :: (Integer,Integer) -> (Integer,Integer) -> (Integer,Integer) -> (Rational, Rational)
+barycentricCoordinatesOfOrigin (xA,yA) (xB,yB) (xC,yC) =
+    let vecAO = (-xA,-yA)
+        vecAB = (xB-xA,yB-yA)
+        vecAC = (xC-xA,yC-yA)
+        d = (fromIntegral $ det2d vecAB vecAC)
+        u = (fromIntegral $ det2d vecAO vecAC) % d
+        v = (fromIntegral $ det2d vecAO vecAB) % (-d) in
+    (u,v)
+
+originInTriangle [xA,yA,xB,yB,xC,yC] =
+    let (u,v) = barycentricCoordinatesOfOrigin (xA,yA) (xB,yB) (xC,yC) in
+        (u > 0) && (v > 0) && (u < 1) && (v < 1) && (u+v < 1)
+
+p102 = length $ filter originInTriangle $ triangles
+    where triangles = (map (map read . splitOn ",") $ lines $ unsafePerformIO $ readFile "triangles.txt")::([[Integer]])
+
+--------------------------------------------------------------------------------
 -- Problem 104
 --------------------------------------------------------------------------------
 
@@ -1076,6 +1100,18 @@ numDecreasingNumbers' n = (binomial (n+9) 9) - 1
 numNonBouncyNumbers' n = (numIncreasingNumbers' n) + (numDecreasingNumbers' n) - 9
 
 p113 = sum [numNonBouncyNumbers' m | m <- [1..100]]
+
+--------------------------------------------------------------------------------
+-- Problem 119
+--------------------------------------------------------------------------------
+
+isDigitPowerSum n
+    | n < 10 = error "A number must contain at least two digits to have a sum."
+    | otherwise = let d = sumDigits n in
+        (d > 1) && (n == d ^ (integerLogBase d n))
+
+p119 = digitPowerSums !! (30-1)
+    where digitPowerSums = foldl1 Ordered.union $ [filter isDigitPowerSum [x^p | x <- [4..100]] | p <- [2..10]]
 
 --------------------------------------------------------------------------------
 -- Problem 120
