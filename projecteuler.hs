@@ -49,6 +49,9 @@ isPandigital19 = is_pandigital19
 tenToTheSixteenth :: Int
 tenToTheSixteenth = (10^16)
 
+squares :: [Integer]
+squares = [x^2 | x <- [1..]]
+
 --------------------------------------------------------------------------------
 -- Problem 1
 --------------------------------------------------------------------------------
@@ -551,6 +554,8 @@ palindromes' b l =
 palindromes b =
     concat [palindromes' b n | n <- [1..]]
 
+palindromes10 = palindromes 10
+
 p36 = sum $ takeWhile (<= 10^6) $ Ordered.isect (palindromes 2) (palindromes 10)
 
 --------------------------------------------------------------------------------
@@ -868,6 +873,13 @@ p71 = numerator $ maximum [i % j | j <- [2..1000000], let i = floor $ 3.0 * (fro
 p73 = length $ Ordered.nubSort [x | d <- [1..12000], i <- [1..(d-1)], let x = i%d, (1%3) < x, x < (1%2)]
 
 --------------------------------------------------------------------------------
+-- Problem 75
+--------------------------------------------------------------------------------
+
+pythagoreanTriplets kMax mMax = [[a,b,c] | k <- [1..kMax], m <- [1..mMax], n <- [1..m-1], (m-n) `mod` 2 == 1, 
+    gcd m n == 1, let a = k * (m^2 - n^2), let b = k*2*m*n, let c = k * (m^2 + n^2)]
+
+--------------------------------------------------------------------------------
 -- Problem 76
 --------------------------------------------------------------------------------
 
@@ -881,7 +893,25 @@ binomial' n p
 
 binomial n p = binomial' n $ min (n-p) p
 
---p76 = 
+--------------------------------------------------------------------------------
+-- Problem 76
+--------------------------------------------------------------------------------
+
+summation 0 = [[]]
+summation 1 = [[1]]
+summation n = Ordered.nubSort [Ordered.insertBag p s | p <- [1..(n-1)], s <- summation (n-p)]
+
+summation' :: Int -> IntMap.IntMap [[Int]]
+summation' 1 = IntMap.singleton 1 [[1]]
+summation' n =
+    let sums = summation' (n-1)
+        newsum = Ordered.nubSort [Ordered.insertBag p s | p <- [1..(n-1)], s <- fromJust $ IntMap.lookup (n-p) sums] in
+    IntMap.insert n newsum sums
+
+p76 = length $ fromJust $ IntMap.lookup n $ summation' n where n = 60
+
+--p76 = 190569292 - 1
+--well-known value...
 
 --------------------------------------------------------------------------------
 -- Problem 77
@@ -1192,6 +1222,16 @@ p123 = fst $ fst $ head $ dropWhile ((<= 10^10) . snd) [((n,pn),r n pn) | (n,pn)
     where r n pn = (expMod (pn - 1) n (pn^2) + expMod (pn + 1) n (pn^2)) `mod` (pn^2)
 
 --------------------------------------------------------------------------------
+-- Problem 125
+--------------------------------------------------------------------------------
+
+--sumOfConsecutiveSquares = foldl' Ordered.union [] [sumConsecutive n squares | n <- [2..]]
+
+p125 = sum $ foldl' Ordered.union [] [Ordered.isect palin $ takeWhile (<= 10^8) $ sumConsecutive n squares | n <- [2..675]]
+    where
+        palin = takeWhile (<= 10^8) palindromes10
+
+--------------------------------------------------------------------------------
 -- Problem 127
 --------------------------------------------------------------------------------
 
@@ -1445,9 +1485,9 @@ s' n
 -- Main
 --------------------------------------------------------------------------------
 
---putShow = putStrLn . show
+putShow = putStrLn . show
 
---main = do putShow $ head [m | n <- [5000..], let m = 2*n + 1, let sd = (spiralDiags m), let p = length $ filter isPrime sd, let q = length sd, (p%q) < (1/10)]
+main = do putShow $ p179
 --main = do putShow $ length $ Ordered.nubSort [x | d <- [1..12000], i <- [1..(d-1)], let x = i%d, (1%3) < x, x < (1%2)]
 --main = do putStrLn $ show $ let p = 19 in let q = 37 in let phi = (p-1)*(q-1) in let n = p*q in [(e,unconcealed) | e <- [1..phi-1], gcd phi e == 1, let unconcealed = numUnconcealedMessages e n]
 --main = do putStrLn $ show [s | s <- genSeq 9 [0..9], all (flip isSubsequence s) keylog]
