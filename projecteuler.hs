@@ -21,6 +21,7 @@ import Debug.Trace (trace)
 import qualified Data.IntMap as IntMap
 import qualified Data.IntMap.Strict as IntMapS
 import qualified Data.Map as Map
+import Numeric.Search.Range (searchFromTo)
 import Math.NumberTheory.Powers.Squares (isSquare, integerSquareRoot)
 import Math.NumberTheory.Powers.Cubes (isCube)
 import Math.NumberTheory.Primes.Testing (isPrime)
@@ -109,6 +110,9 @@ largestPrimeFactor n =
 decomp :: Integer -> [(Integer,Int)]
 decomp n = map (\g -> (head g, length g)) $ group $ factors n
 
+decompInt :: Integer -> [(Int,Int)]
+decompInt = map (\(a,b) -> (fromInteger a, b)) . decomp
+
 nDivisors :: Integer -> Int
 nDivisors =
     product . map ((+1) . snd) . decomp
@@ -134,6 +138,14 @@ isAmicable n =
     ((==) n $ sumProperDivisors d) && (n /= d)
 
 problem3 = largestPrimeFactor 600851475143
+
+orderedMergeBag [] l = l
+orderedMergeBag l [] = l
+orderedMergeBag ((a,n):as) ((b,m):bs) =
+    case compare a b of 
+        EQ -> (a,n+m):orderedMergeBag as bs
+        LT -> (a,n):orderedMergeBag as ((b,m):bs)
+        GT -> (b,m):orderedMergeBag ((a,n):as) bs
 
 --------------------------------------------------------------------------------
 -- Problem 4
@@ -933,10 +945,35 @@ p77 = head [n | (n,m) <- IntMap.toList $ IntMap.map length $ primeSummation' 100
 -- Problem 78
 --------------------------------------------------------------------------------
 
---coinPartitions 0 = [[]]
---coinPartitions 1 = [[1]]
---coinPartitions 2 = [[2],[1,1]]
---coinPartitions n = Ordered.nubSort $ map sort $ concat $ [map (p:) (coinPartitions (n-p)) | p <- [1..n]]
+-- works but slow
+
+--q p m = q' p m p
+
+--q' 0 _ _ = 1
+--q' _ 0 _ = 0
+--q' p m x0 = sum [q' p' (m-1) x1 | x1 <- [0..x0], let p' = p - x1]
+
+--p n = sum [q (n-m) m | m <- [1..n]]
+
+--p :: Integer -> Integer
+--p n
+--    | n < 0 = 0
+--    | n == 0 = 1
+--    | n > 0 = let   sqrtdelta = sqrt (1 + (fromInteger $ 24*n))
+--                    k0 = ceiling $ 1 + ((1 - sqrtdelta)/6)
+--                    k1 = floor $ ((1 + sqrtdelta) /6) - 1
+--                    nk0 = (k0*(3*k0-1) `div` 2) in
+--                    trace (show (n,k0,k1)) $ sum [ (-1)^(abs k) * (p (n-(k*(3*k-1) `div` 2))) | k <- [k0..k1]]
+
+--p(N,M;n) = p(N,M-1;n) + p(N-1,M;n-M)
+
+p' _ _ 0 = 1
+p' _ 0 _ = 0
+p' _ _ n | n < 0 = 0
+--p' n' m' n = p' n' (m'-1) n + p' (n' - 1) m' (n - m')
+p' n' m' n = sum [p' (n' - 1) m'' (n - m'') | m'' <- [0..m']]
+
+p n = p' n n n
 
 --------------------------------------------------------------------------------
 -- Problem 79
@@ -1038,6 +1075,24 @@ pathSumTwoWays arr =
     pathSumTwoWays' arr parr
 
 p81 = pathSumTwoWays big_arr
+
+--------------------------------------------------------------------------------
+-- Problem 86
+--------------------------------------------------------------------------------
+
+squareShortestLineDistance p q r =
+    let [a,b,c] = sort [p,q,r] in
+    (a+b)^2 + c^2
+
+squareShortestLineDistance' p qr =
+    (qr)^2 + p^2
+
+numIntegerSolutionsCuboidRoute m = sum [1 | p <- [1..m], q <- [1..p], r <- [1..q], isSquare $ squareShortestLineDistance p q r]
+
+--numIntegerSolutionsCuboidRoute' :: Integer -> Integer
+numIntegerSolutionsCuboidRoute' m = trace (show m) $ sum [n | p <- [1..m], qr <- [(2)..(2*p)], let n = ((min qr ((2+2*p)-qr))) `div` 2, isSquare $ squareShortestLineDistance' p qr]
+
+p86 = searchFromTo (\n -> numIntegerSolutionsCuboidRoute' n >= 1000000) 1000 2000
 
 --------------------------------------------------------------------------------
 -- Problem 87
@@ -1167,6 +1222,19 @@ numDecreasingNumbers' n = (binomial (n+9) 9) - 1
 numNonBouncyNumbers' n = (numIncreasingNumbers' n) + (numDecreasingNumbers' n) - 9
 
 p113 = sum [numNonBouncyNumbers' m | m <- [1..100]]
+
+--------------------------------------------------------------------------------
+-- Problem 118
+--------------------------------------------------------------------------------
+
+partitions :: [Integer] -> Int -> [[[Integer]]]
+partitions l 1 = [[l]]
+partitions l 2 = [[a,b] | n <- [1..(length l - 1)], let (a,b) = splitAt n l]
+partitions l n = [([a,b]++xs) | (x:xs) <- partitions l (n-1), n <- [1..(length x - 1)], let (a,b) = splitAt n x]
+
+allPartitions l = concat [partitions l n | n <- [1..length l]] 
+
+p118 = length $ Ordered.nubSort $ concat $ map (filter (all isPrime) . map (Ordered.nubSort . map fromDigits) . allPartitions) $ permutations [1..9]
 
 --------------------------------------------------------------------------------
 -- Problem 119
@@ -1464,30 +1532,29 @@ average l =
 -- Problem 463
 --------------------------------------------------------------------------------
 
-f 1 = 1
-f 3 = 3
-f n
-    | n `rem` 2 == 0 = f (n `div` 2)
-    | n `rem` 4 == 1 = 2 * f ((n+1) `div` 2) - f ((n-1) `div` 4)
-    | n `rem` 4 == 3 = 3 * f ((n-1) `div` 2) - 2 * (f ((n-1) `div` 4))
+--f 1 = 1
+--f 3 = 3
+--f n
+--    | n `rem` 2 == 0 = f (n `div` 2)
+--    | n `rem` 4 == 1 = 2 * f ((n+1) `div` 2) - f ((n-1) `div` 4)
+--    | n `rem` 4 == 3 = 3 * f ((n-1) `div` 2) - 2 * (f ((n-1) `div` 4))
 
 -- f n = greatest odd divisor of n... nope
 
-s n = sum [f i | i <- [1..n]]
+--s n = sum [f i | i <- [1..n]]
 
-s' 0 = 0
-s' 1 = 1
-s' n
-    | n `rem` 2 == 0 = let p = n `div` 2 in (p^2) + s' p
-    | n `rem` 2 == 1 = let p = n `div` 2 in ((p+1)^2) + s' p
+--s' 0 = 0
+--s' 1 = 1
+--s' n
+--    | n `rem` 2 == 0 = let p = n `div` 2 in (p^2) + s' p
+--    | n `rem` 2 == 1 = let p = n `div` 2 in ((p+1)^2) + s' p
 
 --------------------------------------------------------------------------------
 -- Main
 --------------------------------------------------------------------------------
 
 putShow = putStrLn . show
-
-main = do putShow $ p179
+main = do putShow $ p118
 --main = do putShow $ length $ Ordered.nubSort [x | d <- [1..12000], i <- [1..(d-1)], let x = i%d, (1%3) < x, x < (1%2)]
 --main = do putStrLn $ show $ let p = 19 in let q = 37 in let phi = (p-1)*(q-1) in let n = p*q in [(e,unconcealed) | e <- [1..phi-1], gcd phi e == 1, let unconcealed = numUnconcealedMessages e n]
 --main = do putStrLn $ show [s | s <- genSeq 9 [0..9], all (flip isSubsequence s) keylog]
