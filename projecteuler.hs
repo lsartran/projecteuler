@@ -727,6 +727,26 @@ primeSumOfConsecutivePrimes m n =
 p50 = snd $ last [(n,p) | n <- [501,503..599], p <- primeSumOfConsecutivePrimes (10^6) n]
 
 --------------------------------------------------------------------------------
+-- Problem 51
+--------------------------------------------------------------------------------
+
+genMask 0 = []
+genMask 1 = [[0],[1]]
+genMask n = [x:l | l <- genMask (n-1), x <- [0,1]]
+
+genSubstitutions n =
+    let d = digits n
+        mask = genMask $ length d in
+    init $ tail $ [[n' | r <- [0..9], let n' = fromDigits $ zipWith (\a b -> if a == 0 then r else b) m d, length (digits n') == length d] | m <- mask]
+
+getMinPrime n =
+    case filter ((==8) . length) $ map (filter isPrime) $ genSubstitutions n of
+        [] -> Nothing
+        l -> Just $ minimum $ map minimum l
+
+p51 = head $ catMaybes [getMinPrime p |p <- primes]
+
+--------------------------------------------------------------------------------
 -- Problem 52
 --------------------------------------------------------------------------------
 
@@ -1151,13 +1171,13 @@ p99 = fst $ last $ sortBy (compare `on` snd)[(i,(fromInteger b)*(log $ fromInteg
 -- Problem 101
 --------------------------------------------------------------------------------
 
-u :: Integer -> Ratio Integer
-u n = evalPoly (poly LE $ take 11 $ cycle ([1,-1]::[Ratio Integer])) (fromIntegral n)
+p101_u :: Integer -> Ratio Integer
+p101_u n = evalPoly (poly LE $ take 11 $ cycle ([1,-1]::[Ratio Integer])) (fromIntegral n)
 
-op :: Integer -> Integer -> Ratio Integer
-op k n = polyInterp [(i % 1, u i) | i <- [1..k]] (n % 1)
+p101_op :: Integer -> Integer -> Ratio Integer
+p101_op k n = polyInterp [(i % 1, p101_u i) | i <- [1..k]] (n % 1)
 
-p101 = numerator $ sum [op k (k+1) | k <- [1..10]]
+p101 = numerator $ sum [p101_op k (k+1) | k <- [1..10]]
 
 --------------------------------------------------------------------------------
 -- Problem 102
@@ -1445,6 +1465,28 @@ sqp206l = integerSquareRoot p206l
 p206u = 1929394959697989990
 sqp206u = 1 + (integerSquareRoot p206u)
 
+p206 = integerSquareRoot $ head $ filter ((== [1,2,3,4,5,6,7,8,9,0]) . map snd . filter (\(a,b) -> a `mod` 2 ==0) . zip [0..] . digits) [p | s <- [sqp206l,(sqp206l+10)..sqp206u], (s `mod` 100 == 30) || (s `mod` 100 == 70), let p = s^2]
+
+--------------------------------------------------------------------------------
+-- Problem 235
+--------------------------------------------------------------------------------
+
+u :: Double -> Integer -> Double
+u r k = (fromInteger (900 - 3*k))*r^(k-1)
+
+s r n = sum [u r k | k <- [1..n]]
+
+-- f a > 0, f b < 0
+findZero f a b =
+    if (b - a) < 1e-12
+    then (a+b)/2
+    else (
+        let c = (a+b)/2 in
+        if f c < 0 then findZero f a c else findZero f c b
+    )
+
+p235 = take 14 $ show $ findZero (\r -> s r 5000 + 6e11) 1.001 1.01
+
 --------------------------------------------------------------------------------
 -- Problem 243
 --------------------------------------------------------------------------------
@@ -1554,7 +1596,7 @@ average l =
 --------------------------------------------------------------------------------
 
 putShow = putStrLn . show
-main = do putShow $ p118
+main = do putShow $ p206
 --main = do putShow $ length $ Ordered.nubSort [x | d <- [1..12000], i <- [1..(d-1)], let x = i%d, (1%3) < x, x < (1%2)]
 --main = do putStrLn $ show $ let p = 19 in let q = 37 in let phi = (p-1)*(q-1) in let n = p*q in [(e,unconcealed) | e <- [1..phi-1], gcd phi e == 1, let unconcealed = numUnconcealedMessages e n]
 --main = do putStrLn $ show [s | s <- genSeq 9 [0..9], all (flip isSubsequence s) keylog]
