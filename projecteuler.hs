@@ -1441,8 +1441,13 @@ p187 = length $ Ordered.nubSort [x*y | x <- takeWhile (<= (div n 2)) ps, y <- ta
 -- Problem 188
 --------------------------------------------------------------------------------
 
---hyperExp x 1 m = a `mod` m
---hyperExp x k m = expMod a ()
+-- let p = 1777, n = 10^8
+-- since p^n = 1 [n], we can apply f: a -> p^a mod n
+
+hyperExpPrime p 1 m = p `mod` m
+hyperExpPrime p k m = expMod p (hyperExpPrime p (k-1) m) m
+
+p188 = hyperExpPrime 1777 1855 (10^8)
 
 --------------------------------------------------------------------------------
 -- Problem 190
