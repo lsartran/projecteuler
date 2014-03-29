@@ -129,8 +129,19 @@ sumDivisors n = (sum $ divisors n)
 sumProperDivisors :: Integer -> Integer
 sumProperDivisors n = (-) (sum $ divisors n) n
 
+--sumSquaredDivisors :: Integer -> Integer
+--sumSquaredDivisors = sum . map (^2) . divisors
+
+sigmaK :: Int -> Integer -> Integer
+sigmaK k = product . map (\(p,a) -> sum [p^(j*k) | j <- [0..a]]) . decomp
+--sigmaK k = product . map (\(p,a) -> ((p^((a+1)*k) - 1) `div` (p^k - 1))) . decomp
+--sigmaK k = product . map (\(p,a) -> sum $ scanl (\c d -> c*p^k) 1 [1..a]) . decomp
+
+isSigmaKSquare :: Int -> Integer -> Bool
+isSigmaKSquare k = isSquareBag . foldl' orderedMergeBag [] . map (decomp . \(p,a) -> sum [p^(j*k) | j <- [0..a]]) . decomp
+
 sumSquaredDivisors :: Integer -> Integer
-sumSquaredDivisors = sum . map (^2) . divisors
+sumSquaredDivisors = sigmaK 2
 
 isAmicable :: Integer -> Bool
 isAmicable n =
@@ -146,6 +157,10 @@ orderedMergeBag ((a,n):as) ((b,m):bs) =
         EQ -> (a,n+m):orderedMergeBag as bs
         LT -> (a,n):orderedMergeBag as ((b,m):bs)
         GT -> (b,m):orderedMergeBag ((a,n):as) bs
+
+isSquareBag [] = True
+isSquareBag ((a,n):l) = (n `rem` 2 == 0) && (isSquareBag l)
+
 
 --------------------------------------------------------------------------------
 -- Problem 4
@@ -1473,6 +1488,12 @@ sqp206u = 1 + (integerSquareRoot p206u)
 p206 = integerSquareRoot $ head $ filter ((== [1,2,3,4,5,6,7,8,9,0]) . map snd . filter (\(a,b) -> a `mod` 2 ==0) . zip [0..] . digits) [p | s <- [sqp206l,(sqp206l+10)..sqp206u], (s `mod` 100 == 30) || (s `mod` 100 == 70), let p = s^2]
 
 --------------------------------------------------------------------------------
+-- Problem 211
+--------------------------------------------------------------------------------
+
+p211 = 1 + sum [n | n <- [1..(64*10^6-1)], isSquare $ sumSquaredDivisors n]
+
+--------------------------------------------------------------------------------
 -- Problem 235
 --------------------------------------------------------------------------------
 
@@ -1600,8 +1621,9 @@ average l =
 -- Main
 --------------------------------------------------------------------------------
 
-putShow = putStrLn . show
-main = do putShow $ p206
+--putShow = putStrLn . show
+main = do putStrLn $ show $ sum [n | n <- [1..(64*10^6-1)], isSquare $ sumSquaredDivisors n]
+--main = do mapM_ (putStrLn . show) $ filter (isSigmaKSquare 2) [1..63999999] 
 --main = do putShow $ length $ Ordered.nubSort [x | d <- [1..12000], i <- [1..(d-1)], let x = i%d, (1%3) < x, x < (1%2)]
 --main = do putStrLn $ show $ let p = 19 in let q = 37 in let phi = (p-1)*(q-1) in let n = p*q in [(e,unconcealed) | e <- [1..phi-1], gcd phi e == 1, let unconcealed = numUnconcealedMessages e n]
 --main = do putStrLn $ show [s | s <- genSeq 9 [0..9], all (flip isSubsequence s) keylog]
