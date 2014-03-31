@@ -920,6 +920,25 @@ p71 = numerator $ maximum [i % j | j <- [2..1000000], let i = floor $ 3.0 * (fro
 p73 = length $ Ordered.nubSort [x | d <- [1..12000], i <- [1..(d-1)], let x = i%d, (1%3) < x, x < (1%2)]
 
 --------------------------------------------------------------------------------
+-- Problem 74
+--------------------------------------------------------------------------------
+
+isLooping l =
+    let il = init l
+        x = last l in
+    elem x il
+
+-- l is an infinite list
+lengthNonRepeating l =
+    head [n-1 | n <- [2..], isLooping $ take n l]
+
+sumFactorialDigits = sum . map fact . digits'
+
+lengthDigitFactorialChain = lengthNonRepeating . iterate sumFactorialDigits
+
+p74 = length [n | n <- [1..10^6], let l = lengthDigitFactorialChain n, l == 60]
+
+--------------------------------------------------------------------------------
 -- Problem 75
 --------------------------------------------------------------------------------
 
@@ -1628,7 +1647,7 @@ average l =
 --------------------------------------------------------------------------------
 
 --putShow = putStrLn . show
-main = do putStrLn $ show $ sum [n | n <- [1..(64*10^6-1)], isSquare $ sumSquaredDivisors n]
+--main = do putStrLn $ show $ p74
 --main = do mapM_ (putStrLn . show) $ filter (isSigmaKSquare 2) [1..63999999] 
 --main = do putShow $ length $ Ordered.nubSort [x | d <- [1..12000], i <- [1..(d-1)], let x = i%d, (1%3) < x, x < (1%2)]
 --main = do putStrLn $ show $ let p = 19 in let q = 37 in let phi = (p-1)*(q-1) in let n = p*q in [(e,unconcealed) | e <- [1..phi-1], gcd phi e == 1, let unconcealed = numUnconcealedMessages e n]
