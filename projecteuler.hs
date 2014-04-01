@@ -835,6 +835,19 @@ encrypt = decrypt
 p59 = sum $ decrypt p59_key cipher1
 
 --------------------------------------------------------------------------------
+-- Problem 60
+--------------------------------------------------------------------------------
+
+isPrimePairSetWith a l = all isPrime ([c | b <- l, a /= b, let c = fromDigits (digits a ++ digits b)] ++ [c | b <- l, a /= b, let c = fromDigits (digits b ++ digits a)])
+
+isPrimePairSet l = all isPrime [c | a <- l, b <- l, a /= b, let c = fromDigits (digits a ++ digits b)]
+
+primePairSets m 1 = [[p] | p <- takeWhile (<= m) primes]
+primePairSets m n = [ l | b <- primePairSets m (n-1), a <- dropWhile (<= (head b)) (takeWhile (<= m) primes), let l = a:b, isPrimePairSetWith a b]
+
+p60 = sum $ head $ primePairSets 10000 5
+
+--------------------------------------------------------------------------------
 -- Problem 62
 --------------------------------------------------------------------------------
 
