@@ -1144,6 +1144,20 @@ pathSumTwoWays arr =
 p81 = pathSumTwoWays big_arr
 
 --------------------------------------------------------------------------------
+-- Problem 85
+--------------------------------------------------------------------------------
+
+numRectanglesOfSize (a,b) (p,q) =
+    (div p a) * (div q b) * ((rem p a) + 1) * ((rem q b) + 1)
+
+--numRectangles (p,q) = sum [numRectanglesOfSize (a,b) (p,q) | a <- [1..p], b <- [1..q]]
+numRectangles :: (Int, Int) -> Int
+--numRectangles (p,q) = sum [n*m*(r+1)*(s+1) | a <- [1..p]::[Int], b <- [1..q]::[Int], let (n,r) = quotRem p a, let (m,s) = quotRem q b]
+numRectangles (p,q) = (binomial (p+1) 2) * (binomial (q+1) 2)
+
+p85 = (uncurry (*)) $ fst $ minimumBy (compare `on` ((\x -> abs (x - 2000000)) . snd)) [((a,b),numRectangles (a,b)) | a <- [1..2000], b <- [1..a]]
+
+--------------------------------------------------------------------------------
 -- Problem 86
 --------------------------------------------------------------------------------
 
@@ -1660,7 +1674,7 @@ average l =
 --------------------------------------------------------------------------------
 
 --putShow = putStrLn . show
---main = do putStrLn $ show $ p74
+main = do putStrLn $ show $ p85
 --main = do mapM_ (putStrLn . show) $ filter (isSigmaKSquare 2) [1..63999999] 
 --main = do putShow $ length $ Ordered.nubSort [x | d <- [1..12000], i <- [1..(d-1)], let x = i%d, (1%3) < x, x < (1%2)]
 --main = do putStrLn $ show $ let p = 19 in let q = 37 in let phi = (p-1)*(q-1) in let n = p*q in [(e,unconcealed) | e <- [1..phi-1], gcd phi e == 1, let unconcealed = numUnconcealedMessages e n]
