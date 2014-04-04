@@ -29,6 +29,7 @@ import Math.NumberTheory.Logarithms (integerLogBase)
 import Math.Polynomial
 import Math.Polynomial.Interpolation
 import Data.Ratio
+import Data.Function.Memoize (traceMemoize,memoize,memoize2)
 import System.IO.Unsafe
 
 --------------------------------------------------------------------------------
@@ -108,6 +109,8 @@ largestPrimeFactor n =
     last $ factors n
 
 decomp :: Integer -> [(Integer,Int)]
+decomp 0 = []
+decomp 1 = []
 decomp n = map (\g -> (head g, length g)) $ group $ factors n
 
 decompInt :: Integer -> [(Int,Int)]
@@ -848,6 +851,24 @@ primePairSets m n = [ l | b <- primePairSets m (n-1), a <- dropWhile (<= (head b
 p60 = sum $ head $ primePairSets 10000 5
 
 --------------------------------------------------------------------------------
+-- Problem 61
+--------------------------------------------------------------------------------
+
+isCyclic l = isCyclic' (l ++ [head l])
+
+isCyclic' [] = True
+isCyclic' [l] = True
+isCyclic' (x:y:l) = ((take 2 $ digits y) == (drop 2 $ digits x)) && isCyclic' (y:l)
+
+heptagonal_nums = [div (n*(5*n-3)) 2 | n <- [1..]]
+octagonal_nums = [n*(3*n-2) | n <- [1..]]
+
+onlyFourDigits = dropWhile (<= 999) . takeWhile (<= 9999)
+
+--, d <- onlyFourDigits hexagonal_nums, e <- onlyFourDigits heptagonal_nums, f <- onlyFourDigits octagonal_nums
+--[l | a <- onlyFourDigits triangle_nums, b <- onlyFourDigits squares, c <- onlyFourDigits pentagonal_nums, let l = [a,b,c,d,e,f], isCyclic l]
+
+--------------------------------------------------------------------------------
 -- Problem 62
 --------------------------------------------------------------------------------
 
@@ -925,6 +946,12 @@ p70 = (\(a,b,c) -> a) $ head $ sortBy (compare `on` (\(a,b,c) -> c)) [(n,m,(from
 --------------------------------------------------------------------------------
 
 p71 = numerator $ maximum [i % j | j <- [2..1000000], let i = floor $ 3.0 * (fromIntegral j) / 7.0, (i%j) < (3%7)]
+
+--------------------------------------------------------------------------------
+-- Problem 72
+--------------------------------------------------------------------------------
+
+p72 = sum [totient' n | n <- [1..1000000]]
 
 --------------------------------------------------------------------------------
 -- Problem 73
@@ -1012,35 +1039,31 @@ p77 = head [n | (n,m) <- IntMap.toList $ IntMap.map length $ primeSummation' 100
 -- Problem 78
 --------------------------------------------------------------------------------
 
--- works but slow
+--integerPartitions = (map f [0..])
+--    where
+--        f 0 = 1
+--        f 1 = 1
+--        f n = (sum [ (sigmaK 1 (n-j)) * ip | (ip,j) <- zip integerPartitions [0..(n-1)]]) `div` n
 
---q p m = q' p m p
+g :: Int -> Int
+g k = div (k * (3*k - 1)) 2
 
---q' 0 _ _ = 1
---q' _ 0 _ = 0
---q' p m x0 = sum [q' p' (m-1) x1 | x1 <- [0..x0], let p' = p - x1]
+generalisedPentagonalNumbers = map g $ concat [[k, -k] | k <- [1..]]
 
---p n = sum [q (n-m) m | m <- [1..n]]
+integerPartition = memoize f
+    where
+        f 0 = 1
+        f 1 = 1
+        f n = sum [ s * (integerPartition (n - gk)) | (s,gk) <- zip (cycle [1,1,-1,-1]) (takeWhile (<= n) generalisedPentagonalNumbers)]
 
---p :: Integer -> Integer
---p n
---    | n < 0 = 0
---    | n == 0 = 1
---    | n > 0 = let   sqrtdelta = sqrt (1 + (fromInteger $ 24*n))
---                    k0 = ceiling $ 1 + ((1 - sqrtdelta)/6)
---                    k1 = floor $ ((1 + sqrtdelta) /6) - 1
---                    nk0 = (k0*(3*k0-1) `div` 2) in
---                    trace (show (n,k0,k1)) $ sum [ (-1)^(abs k) * (p (n-(k*(3*k-1) `div` 2))) | k <- [k0..k1]]
+integerPartitionMod :: Int -> Int -> Int
+integerPartitionMod = memoize2 f
+    where
+        f m 0 = 1
+        f m 1 = 1
+        f m n = mod (sum [ s * (integerPartitionMod m (n - gk)) | (s,gk) <- zip (cycle [1,1,-1,-1]) (takeWhile (<= n) generalisedPentagonalNumbers)]) m
 
---p(N,M;n) = p(N,M-1;n) + p(N-1,M;n-M)
-
-p' _ _ 0 = 1
-p' _ 0 _ = 0
-p' _ _ n | n < 0 = 0
---p' n' m' n = p' n' (m'-1) n + p' (n' - 1) m' (n - m')
-p' n' m' n = sum [p' (n' - 1) m'' (n - m'') | m'' <- [0..m']]
-
-p n = p' n n n
+p78 = snd $ head $ dropWhile ((/= 0) . fst) $ zip (map (integerPartitionMod (10^6)) [0..]) [0..]
 
 --------------------------------------------------------------------------------
 -- Problem 79
@@ -1674,8 +1697,8 @@ average l =
 --------------------------------------------------------------------------------
 
 --putShow = putStrLn . show
-main = do putStrLn $ show $ p85
---main = do mapM_ (putStrLn . show) $ filter (isSigmaKSquare 2) [1..63999999] 
+main = do putStrLn $ show $ p78
+--main = do mapM_ (putStrLn . show) $ filter ((== 0) . (flip mod (10^6)) . fst) $ zip (integerPartitions) [0..]
 --main = do putShow $ length $ Ordered.nubSort [x | d <- [1..12000], i <- [1..(d-1)], let x = i%d, (1%3) < x, x < (1%2)]
 --main = do putStrLn $ show $ let p = 19 in let q = 37 in let phi = (p-1)*(q-1) in let n = p*q in [(e,unconcealed) | e <- [1..phi-1], gcd phi e == 1, let unconcealed = numUnconcealedMessages e n]
 --main = do putStrLn $ show [s | s <- genSeq 9 [0..9], all (flip isSubsequence s) keylog]
