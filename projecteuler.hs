@@ -1039,12 +1039,6 @@ p77 = head [n | (n,m) <- IntMap.toList $ IntMap.map length $ primeSummation' 100
 -- Problem 78
 --------------------------------------------------------------------------------
 
---integerPartitions = (map f [0..])
---    where
---        f 0 = 1
---        f 1 = 1
---        f n = (sum [ (sigmaK 1 (n-j)) * ip | (ip,j) <- zip integerPartitions [0..(n-1)]]) `div` n
-
 g :: Int -> Int
 g k = div (k * (3*k - 1)) 2
 
@@ -1392,6 +1386,12 @@ p122 = sum $ map snd $ map (\l -> (fst (l !! 0), minimum $ map (fst . snd) l)) $
 
 p123 = fst $ fst $ head $ dropWhile ((<= 10^10) . snd) [((n,pn),r n pn) | (n,pn) <- zip [1..] primes]
     where r n pn = (expMod (pn - 1) n (pn^2) + expMod (pn + 1) n (pn^2)) `mod` (pn^2)
+
+--------------------------------------------------------------------------------
+-- Problem 124
+--------------------------------------------------------------------------------
+
+p124 = (sort [(rad n,n) | n <- [1..100000]]) !! (10000 - 1)
 
 --------------------------------------------------------------------------------
 -- Problem 125
