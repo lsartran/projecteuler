@@ -23,7 +23,7 @@ import qualified Data.IntMap.Strict as IntMapS
 import qualified Data.Map as Map
 import Numeric.Search.Range (searchFromTo)
 import Math.NumberTheory.Powers.Squares (isSquare, integerSquareRoot)
-import Math.NumberTheory.Powers.Cubes (isCube)
+import Math.NumberTheory.Powers.Cubes (isCube, integerCubeRoot)
 import Math.NumberTheory.Primes.Testing (isPrime)
 import Math.NumberTheory.Logarithms (integerLogBase)
 import Math.Polynomial
@@ -1668,12 +1668,43 @@ p250 :: Int
 p250 = ((UV.!) (modSumFromSubsets' ([expMod n n 250 | n <- [1..250250]]) 250 tenToTheSixteenth) 0) - 1
 
 --------------------------------------------------------------------------------
+-- Problem 342
+--------------------------------------------------------------------------------
+
+--[q | n <- [2..], isCube (n * (totient' n))]
+
+--[(q,q3) | q <- [1..], let q3 = q^3]
+
+-- injective
+invertNTimesPhi :: Integer -> Maybe Integer
+invertNTimesPhi 0 = Nothing
+invertNTimesPhi 1 = Just 1
+invertNTimesPhi 2 = Just 2
+invertNTimesPhi y = 
+    let (a,b) = last $ decomp y in
+    if b `mod` 2 /= 1
+    then Nothing
+    else (
+        let n = a ^ (div (b + 1) 2) in
+        if a == 2 then Just n else (
+            let nphi = n * (totient' n) in
+            case invertNTimesPhi (div y nphi) of
+                Nothing -> Nothing
+                Just y1 -> if y == ((n*y1) * (totient' (n * y1))) then Just (n*y1) else Nothing
+        )
+    )
+
+p342 = sum $ takeWhile (<= (10^10)) $ sort $ map (fromJust . invertNTimesPhi) $ filter (isJust . invertNTimesPhi . (^3)) [q | q <- [1..5*(10^6)]]
+
+--p342 = concat $ filter (isJust . invertNTimesPhi . (^3)) [q | q <- [1..2000]]
+
+--------------------------------------------------------------------------------
 -- Problem 357
 --------------------------------------------------------------------------------
 
 isPrimeGeneratingInteger n = all (isPrime . (\d -> d + (n `div ` d))) $ divisors' n
 
-p357 = sum $ filter isPrimeGeneratingInteger [n | p <- takeWhile (<= (10^8)) primes, let n = p-1, n `mod` 4 == 2, not $ isSquare n]
+p357 = 1 + (sum $ filter isPrimeGeneratingInteger [n | p <- takeWhile (<= (10^8)) primes, let n = p-1, n `mod` 4 == 2, not $ isSquare n])
 
 --------------------------------------------------------------------------------
 -- Problem 448
@@ -1712,8 +1743,8 @@ average l =
 --------------------------------------------------------------------------------
 
 --putShow = putStrLn . show
-main = do putStrLn $ show $ p357
---main = do mapM_ (putStrLn . show) $ filter ((== 0) . (flip mod (10^6)) . fst) $ zip (integerPartitions) [0..]
+--main = do putStrLn $ show $ 
+--main = do mapM_ (putStrLn . show) $ filter (isJust . invertNTimesPhi . (^3)) [q | q <- [1..5*(10^6)]]
 --main = do putShow $ length $ Ordered.nubSort [x | d <- [1..12000], i <- [1..(d-1)], let x = i%d, (1%3) < x, x < (1%2)]
 --main = do putStrLn $ show $ let p = 19 in let q = 37 in let phi = (p-1)*(q-1) in let n = p*q in [(e,unconcealed) | e <- [1..phi-1], gcd phi e == 1, let unconcealed = numUnconcealedMessages e n]
 --main = do putStrLn $ show [s | s <- genSeq 9 [0..9], all (flip isSubsequence s) keylog]
