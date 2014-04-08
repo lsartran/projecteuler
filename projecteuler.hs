@@ -1694,7 +1694,7 @@ invertNTimesPhi y =
         )
     )
 
-p342 = sum $ takeWhile (<= (10^10)) $ sort $ map (fromJust . invertNTimesPhi) $ filter (isJust . invertNTimesPhi . (^3)) [q | q <- [1..5*(10^6)]]
+p342 = sum $ takeWhile (<= (10^10)) $ sort $ map (fromJust . invertNTimesPhi . (^3)) $ filter (isJust . invertNTimesPhi . (^3)) [q | q <- [1..5*(10^6)]]
 
 --p342 = concat $ filter (isJust . invertNTimesPhi . (^3)) [q | q <- [1..2000]]
 
@@ -1743,7 +1743,7 @@ average l =
 --------------------------------------------------------------------------------
 
 --putShow = putStrLn . show
---main = do putStrLn $ show $ 
+main = do putStrLn $ show p342
 --main = do mapM_ (putStrLn . show) $ filter (isJust . invertNTimesPhi . (^3)) [q | q <- [1..5*(10^6)]]
 --main = do putShow $ length $ Ordered.nubSort [x | d <- [1..12000], i <- [1..(d-1)], let x = i%d, (1%3) < x, x < (1%2)]
 --main = do putStrLn $ show $ let p = 19 in let q = 37 in let phi = (p-1)*(q-1) in let n = p*q in [(e,unconcealed) | e <- [1..phi-1], gcd phi e == 1, let unconcealed = numUnconcealedMessages e n]
