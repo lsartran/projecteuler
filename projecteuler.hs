@@ -126,6 +126,13 @@ rad = product . map fst . decomp
 divisors :: Integer -> [Integer]
 divisors n = Ordered.nubSort $ map product $ subsequences $ factors n
 
+divisorsFromDecomp :: [(Integer,Int)] -> [Integer]
+divisorsFromDecomp [] = []
+divisorsFromDecomp [(a,b)] = [a^c | c <- [0..b]]
+divisorsFromDecomp ((a,b):xs) = [d*(a^c) | c <- [0..b], d <- divisorsFromDecomp xs]
+
+divisors' = divisorsFromDecomp . decomp
+
 sumDivisors :: Integer -> Integer
 sumDivisors n = (sum $ divisors n)
 
@@ -1661,6 +1668,14 @@ p250 :: Int
 p250 = ((UV.!) (modSumFromSubsets' ([expMod n n 250 | n <- [1..250250]]) 250 tenToTheSixteenth) 0) - 1
 
 --------------------------------------------------------------------------------
+-- Problem 357
+--------------------------------------------------------------------------------
+
+isPrimeGeneratingInteger n = all (isPrime . (\d -> d + (n `div ` d))) $ divisors' n
+
+p357 = sum $ filter isPrimeGeneratingInteger [n | p <- takeWhile (<= (10^8)) primes, let n = p-1, n `mod` 4 == 2, not $ isSquare n]
+
+--------------------------------------------------------------------------------
 -- Problem 448
 --------------------------------------------------------------------------------
 
@@ -1697,7 +1712,7 @@ average l =
 --------------------------------------------------------------------------------
 
 --putShow = putStrLn . show
-main = do putStrLn $ show $ p78
+main = do putStrLn $ show $ p357
 --main = do mapM_ (putStrLn . show) $ filter ((== 0) . (flip mod (10^6)) . fst) $ zip (integerPartitions) [0..]
 --main = do putShow $ length $ Ordered.nubSort [x | d <- [1..12000], i <- [1..(d-1)], let x = i%d, (1%3) < x, x < (1%2)]
 --main = do putStrLn $ show $ let p = 19 in let q = 37 in let phi = (p-1)*(q-1) in let n = p*q in [(e,unconcealed) | e <- [1..phi-1], gcd phi e == 1, let unconcealed = numUnconcealedMessages e n]
