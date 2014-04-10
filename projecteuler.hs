@@ -1694,7 +1694,7 @@ invertNTimesPhi y =
         )
     )
 
-p342 = sum $ takeWhile (<= (10^10)) $ sort $ map (fromJust . invertNTimesPhi . (^3)) $ filter (isJust . invertNTimesPhi . (^3)) [q | q <- [1..5*(10^6)]]
+p342 = (sum $ takeWhile (<= (10^10)) $ sort $ map (fromJust . invertNTimesPhi . (^3)) $ filter (isJust . invertNTimesPhi . (^3)) [q | q <- [1..5*(10^6)]]) - 1
 
 --p342 = concat $ filter (isJust . invertNTimesPhi . (^3)) [q | q <- [1..2000]]
 
